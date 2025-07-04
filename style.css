@@ -1,0 +1,28 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #1f1f1f;
+    font-family: "Nanum Gothic", sans-serif;
+    font-weight: 600;
+    font-style: normal;
+}
+#signup {
+    background-color: lightskyblue;
+    border-radius: 25px;
+    padding: 25px;
+}
+#name, #blind, #event {
+    border-radius: 5px;
+    border-width: 0px;
+}
+#submit-button {
+    border-radius: 5px;
+    border-width: 0px;
+    background-color: lightgray;
+}
+#submit-button:hover {
+    background-color: gray;
+}
