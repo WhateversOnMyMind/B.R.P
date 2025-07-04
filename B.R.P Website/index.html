@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>B.R.P</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap" rel="stylesheet">
+    <link rel="stylesheet"href="style.css">
+</head>
+<body>
+<form id="signup">
+    <div class="signup-minor">
+        <label>이름을 입력해 주세요:</label>
+        <input type="text" id="name" required>
+    </div>
+    <br>
+    <div class="signup-minor">
+        <label>시각장애인 러너 여부를 입력해 주세요:</label>
+        <input type="checkbox" id="blind">
+    </div>
+    <br>
+    <div class="signup-minor">
+        <label>이벤트 코드를 입력해 주세요:</label>
+        <input type="text" id="event" required>
+    </div>
+    <br>
+    <button class="signup-minor" id="submit-button" type="submit">제출</button>
+</form>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="main.js"></script>
+</body>
+</html>
