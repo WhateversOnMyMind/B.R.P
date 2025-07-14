@@ -5,31 +5,53 @@
     <title>B.R.P</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Nanum+Gothic&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
     <link rel="stylesheet"href="style.css">
 </head>
 <body>
-<form id="signup">
-    <div class="signup-minor">
-        <label>이름을 입력해 주세요:</label>
-        <input type="text" id="name" required>
+<header>
+    <h1 id="vmk">V M K</h1>
+    <div class="navlinks">
+        <a href="#">asdf</a>
+        <a href="#">asdf</a>
+        <a href="#">asdf</a>
+        <a href="#">asdf</a>
     </div>
-    <br>
-    <div class="signup-minor">
-        <label>시각장애인 러너 여부를 입력해 주세요:</label>
-        <input type="checkbox" id="blind">
-    </div>
-    <br>
-    <div class="signup-minor">
-        <label>이벤트 코드를 입력해 주세요:</label>
-        <input type="text" id="event" required>
-    </div>
-    <br>
-    <button class="signup-minor" id="submit-button" type="submit">제출</button>
-</form>
+</header>
+<main>
+    <h2>VMK 활동 신청</h2>
+    <form id="signup">
+        <div class="signup-major">
+            <div class="signup-minor">
+                <label>이름을 입력해 주세요:</label>
+                <input type="text" id="name" required>
+            </div>
+
+            <br>
+
+            <div class="signup-minor">
+                <label>시각장애인 러너 여부를 입력해 주세요:</label>
+                <input type="checkbox" id="blind">
+            </div>
+
+            <br>
+
+            <div class="signup-minor">
+                <label>이벤트 코드를 입력해 주세요:</label>
+                <input type="number" id="event" required>
+            </div>
+            <div class="signup-minor">
+                <label>10km 기록 (분 단위)</label>
+                <input type="number" id="record">
+            </div>
+            <br>
+            <button class="signup-minor" id="submit-button" type="submit">제출</button>
+        </div>
+    </form>
+</main>
 
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script src="main.js"></script>
+
+<script type="module" src="main.js"></script>
 </body>
 </html>

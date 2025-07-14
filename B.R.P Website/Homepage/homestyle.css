@@ -1,0 +1,96 @@
+body {
+    height: 100vh;
+    font-family: "Nanum Gothic";
+    background-color: dimgray;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+.headerless {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+header {
+    position: sticky;
+    width: 100%;
+    height: 15vh;
+    top:0;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    border-width: 1px;
+    border-color: lightgray;
+    border-style: solid;
+    background-color: white;
+    background-color: rgba(256, 256, 256, 0.5);
+}
+.menu {
+    background-color: grey;
+    height: 40%;
+    width: 60%;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+}
+.signup, .checkin {
+    display: flex;
+    background-color: darkgray;
+    padding: 5px;
+    border-radius: 5px;
+    flex: 3;
+    margin-left: 5%;
+    margin-right: 5%;
+}
+.signup:hover, .checkin:hover {
+    background-color: lightgray;
+}
+a.filling_link {
+    display: flex;
+    text-decoration: none;
+    color: black;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 30px;
+    font-weight: bolder;
+}
+.spacer {
+    flex: 1;
+}
+#vmk {
+    color: #ffffff;
+    font-size: 50px;
+    font-weight: 1200;
+    margin-top: 0%;
+}
+.navlinks {
+    display: flex;
+    gap: 25px;
+    width: 100%;
+    justify-content: space-evenly;
+}
+.navlinks a {
+    text-decoration: none;
+    color: #ffffff;
+}
+.kakao img.kakao_yellow {
+    display: none;
+}
+.kakao:hover img.kakao_brown {
+    display: none;
+}
+.kakao:hover img.kakao_yellow {
+    display: inline;
+}
+.kakao img {
+    max-width: 100%;
+    max-height: 100%;
+}
+footer {
+    height: 12vh;
+}
