@@ -20,6 +20,7 @@ main {
     align-items: center;
     flex-direction: column;
     background-image: url(https://d1laub10p5ibfa.cloudfront.net/2023/03/Take-Part-Find-a-Guide-Become-Guide-Runner-hero.webp);
+    background-size: cover;
 }
 #signup {
     border-radius: 25px;
