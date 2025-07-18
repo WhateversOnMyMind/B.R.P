@@ -8,32 +8,32 @@ form.addEventListener('submit', async (e) => {
     const event = document.getElementById('event').valueAsNumber;
     const record = document.getElementById('record').valueAsNumber || null;
 
-    const payload = {
-        name,
-        blind,
-        event,
-        record
-    };
+    // Create a form and submit it directly
+    const hiddenForm = document.createElement('form');
+    hiddenForm.method = 'POST';
+    hiddenForm.action = 'https://script.google.com/macros/s/AKfycbyKfsd4IadqbjbPcWfg7AHLEIGCfdlnbscEKvNGSWl7CiGQhR5-DyeF1E6U38x4o20uOA/exec';
+    hiddenForm.target = '_blank'; // Opens in new tab
 
-    try {
-        const response = await fetch("https://script.google.com/macros/s/AKfycbyKfsd4IadqbjbPcWfg7AHLEIGCfdlnbscEKvNGSWl7CiGQhR5-DyeF1E6U38x4o20uOA/exec", {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
+    const fields = [
+        { name: 'name', value: name },
+        { name: 'blind', value: blind },
+        { name: 'event', value: event },
+        { name: 'record', value: record }
+    ];
 
-        const result = await response.json();
+    fields.forEach(field => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = field.name;
+        input.value = field.value;
+        hiddenForm.appendChild(input);
+    });
 
-        if (result.success) {
-            alert("신청 완료!");
-            form.reset();
-        } else {
-            throw new Error("전송 실패");
-        }
-    } catch (err) {
-        alert("에러 발생: " + err.message);
-        console.error(err);
-    }
+    document.body.appendChild(hiddenForm);
+    hiddenForm.submit();
+    document.body.removeChild(hiddenForm);
+
+    // Show success message
+    alert("신청이 제출되었습니다!");
+    form.reset();
 });
