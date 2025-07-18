@@ -8,11 +8,17 @@ form.addEventListener('submit', async (e) => {
     const event = document.getElementById('event').valueAsNumber;
     const record = document.getElementById('record').valueAsNumber || null;
 
-    // Create a form and submit it directly
+    // Create a hidden iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.name = 'hidden-iframe';
+    document.body.appendChild(iframe);
+
+    // Create form that submits to the hidden iframe
     const hiddenForm = document.createElement('form');
     hiddenForm.method = 'POST';
-    hiddenForm.action = 'https://script.google.com/macros/s/AKfycby7DA9FpDuXnQ3x2U4pCjZCP7ufBXAi3FAEsZyOB0wAbCXjwUCxQ00aGN9GQkcwXHbTCw/exec';
-    hiddenForm.target = '_blank'; // Opens in new tab
+    hiddenForm.action = 'YOUR_APPS_SCRIPT_URL_HERE';
+    hiddenForm.target = 'hidden-iframe'; // Submit to hidden iframe instead of new tab
 
     const fields = [
         { name: 'name', value: name },
@@ -31,7 +37,12 @@ form.addEventListener('submit', async (e) => {
 
     document.body.appendChild(hiddenForm);
     hiddenForm.submit();
+
+    // Clean up
     document.body.removeChild(hiddenForm);
+    setTimeout(() => {
+        document.body.removeChild(iframe);
+    }, 1000);
 
     // Show success message
     alert("신청이 제출되었습니다!");
