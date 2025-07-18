@@ -11,7 +11,7 @@ form.addEventListener('submit', async (e) => {
     // Create a form and submit it directly
     const hiddenForm = document.createElement('form');
     hiddenForm.method = 'POST';
-    hiddenForm.action = 'https://script.google.com/macros/s/AKfycbyKfsd4IadqbjbPcWfg7AHLEIGCfdlnbscEKvNGSWl7CiGQhR5-DyeF1E6U38x4o20uOA/exec';
+    hiddenForm.action = 'https://script.google.com/macros/s/AKfycby7DA9FpDuXnQ3x2U4pCjZCP7ufBXAi3FAEsZyOB0wAbCXjwUCxQ00aGN9GQkcwXHbTCw/exec';
     hiddenForm.target = '_blank'; // Opens in new tab
 
     const fields = [
