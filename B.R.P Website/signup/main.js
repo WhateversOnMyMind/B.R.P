@@ -4,6 +4,7 @@ form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const name = document.getElementById('name').value;
+    const id = document.getElementById('id').value;
     const blind = document.getElementById('blind').checked;
     const event = document.getElementById('event').valueAsNumber;
     const record = document.getElementById('record').valueAsNumber || null;
@@ -17,14 +18,16 @@ form.addEventListener('submit', async (e) => {
     // Create form that submits to the hidden iframe
     const hiddenForm = document.createElement('form');
     hiddenForm.method = 'POST';
-    hiddenForm.action = 'YOUR_APPS_SCRIPT_URL_HERE';
+    hiddenForm.action = 'https://script.google.com/macros/s/AKfycbzeH0gyq-HKJsNzOGPnpZy1tazTHFEjzWbsLRIo6T0CYFthaHvS8U9rNdqfeKV_l3_irQ/exec';
     hiddenForm.target = 'hidden-iframe'; // Submit to hidden iframe instead of new tab
 
     const fields = [
         { name: 'name', value: name },
+        { name: 'id', value: id},
         { name: 'blind', value: blind },
         { name: 'event', value: event },
-        { name: 'record', value: record }
+        { name: 'record', value: record },
+        { name: 'checkin', value: false}
     ];
 
     fields.forEach(field => {
