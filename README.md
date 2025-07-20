@@ -13,7 +13,7 @@ The goal is to streamline coordination between visually impaired runners and the
 
 - Provides a clean, simple interface for sign-ups
 - Saves event data directly to a backend Google Sheet
-- Allows admins to track who showed up and how often
+- Functionality is priority
 - Designed with accessibility and minimalism in mind
 
 ---
