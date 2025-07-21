@@ -1,0 +1,87 @@
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #1f1f1f;
+    font-family: "Nanum Gothic", "Poppins";
+    font-weight: 1000;
+    font-style: normal;
+}
+h2 {
+    color: white;
+}
+main {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background-image: url(https://d1laub10p5ibfa.cloudfront.net/2023/03/Take-Part-Find-a-Guide-Become-Guide-Runner-hero.webp);
+    background-size: cover;
+}
+#checkin {
+    border-radius: 25px;
+    padding: 15px;
+    width: 100%;
+    height: 40vh;
+    font-size: 30px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.checkin-major {
+    background-color: rgba(0, 187, 253, 0.5);
+    border-radius: 15px;
+    padding: 15px;
+    font-family: 'Gamja Flower';
+}
+#name, #blind, #event {
+    border-radius: 5px;
+    border-width: 0px;
+}
+#submit-button {
+    border-radius: 5px;
+    border-width: 0px;
+    background-color: lightgray;
+}
+#submit-button:hover {
+    background-color: gray;
+}
+header {
+    position: fixed;
+    width: 100%;
+    height: 20vh;
+    top:0;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    border-width: 1px;
+    border-color: lightgray;
+    border-style: solid;
+    padding: 12px;
+    background-color: white;
+    background-color: rgba(256, 256, 256, 0.5);
+}
+#vmk {
+    color: #ffffff;
+    font-size: 50px;
+    font-weight: 900;
+    font-family: "Poppins"
+}
+.navlinks {
+    display: flex;
+    gap: 25px;
+    width: 100%;
+    justify-content: space-evenly;
+}
+.navlinks a {
+    text-decoration: none;
+    color: #ffffff;
+}
