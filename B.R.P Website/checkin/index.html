@@ -2,14 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>B.R.P</title>
+    <title>B.R.P 신청</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Nanum+Gothic&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header>
+    <a href="https://blindrunning.com">
+        <h1 id="vmk">V M K</h1>
+    </a>
+    <div class="navlinks">
+        <a href="#">asdf</a>
+        <a href="#">asdf</a>
+        <a href="#">asdf</a>
+        <a href="#">asdf</a>
+    </div>
+</header>
+<main>
+    <h2>VMK 활동 신청</h2>
+    <form id="checkin" action="https://script.google.com/macros/s/AKfycbxoVEQC9uxKF-oNse3o1N1sF0qmh-gLTXhlX4z8Ju-bLKIbvdO9tsKzc9ZE2tSio7FhDQ/exec" method="POST" target="_blank">
+        <div class="checkin-major">
+            <div class="checkin-minor">
+                <label>이름을 입력해 주세요:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
 
-<script type="module" src="checkin.js"></script>
+            <br>
+
+            <div class="checkin-minor">
+                <label>1368 ID를 입력해 주세요</label>
+                <input type="text" id="id" name="id">
+            </div>
+
+            <br>
+
+            <div class="checkin-minor">
+                <label>시각장애인 러너 여부를 입력해 주세요:</label>
+                <input type="checkbox" id="blind" name="blind" value="yes">
+            </div>
+
+            <br>
+
+            <div class="checkin-minor">
+                <label>이벤트 코드를 입력해 주세요:</label>
+                <input type="number" id="event" name="event" required>
+            </div>
+
+            <div class="checkin-minor">
+                <label>10km 기록 (분 단위)</label>
+                <input type="number" id="record" name="record">
+            </div>
+
+            <br>
+            <input type="hidden" name="checkin" value="TRUE">
+            <button class="checkin-minor" id="submit-button" type="submit">제출</button>
+        </div>
+    </form>
+
+</main>
+
+
+
+<script type="module" src="main.js"></script>
 </body>
+</html>
