@@ -18,7 +18,7 @@ form.addEventListener('submit', async (e) => {
     // Create form that submits to the hidden iframe
     const hiddenForm = document.createElement('form');
     hiddenForm.method = 'POST';
-    hiddenForm.action = 'https://script.google.com/macros/s/AKfycbxoVEQC9uxKF-oNse3o1N1sF0qmh-gLTXhlX4z8Ju-bLKIbvdO9tsKzc9ZE2tSio7FhDQ/exec';
+    hiddenForm.action = 'https://script.google.com/macros/s/AKfycbyeJfleTUQGE3D4g0HJ7hxM1MkKL8Dhh9tDjs9NGPpM00k-fwE7KCvtJ3ifWHEltFi3kA/exec';
     hiddenForm.target = 'hidden-iframe';
 
     const fields = [
