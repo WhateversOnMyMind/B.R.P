@@ -22,9 +22,9 @@
     </div>
 </header>
 <main>
-    <h2>VMK 활동 신청</h2>
-    <form id="checkin" action="https://script.google.com/macros/s/AKfycbxoVEQC9uxKF-oNse3o1N1sF0qmh-gLTXhlX4z8Ju-bLKIbvdO9tsKzc9ZE2tSio7FhDQ/exec" method="POST" target="_blank">
+    <form id="checkin" action="https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec" method="POST" target="_blank">
         <div class="checkin-major">
+            <strong>신청할 때 입력한 값을 동일하게 입력해 주세요</strong>
             <div class="checkin-minor">
                 <label>이름을 입력해 주세요:</label>
                 <input type="text" id="name" name="name" required>
@@ -41,7 +41,8 @@
 
             <div class="checkin-minor">
                 <label>시각장애인 러너 여부를 입력해 주세요:</label>
-                <input type="checkbox" id="blind" name="blind" value="yes">
+                <input type="hidden" name="blind" value="FALSE">
+                <input type="checkbox" id="blind" name="blind" value="TRUE">
             </div>
 
             <br>
@@ -58,7 +59,7 @@
 
             <br>
             <input type="hidden" name="checkin" value="TRUE">
-            <button class="checkin-minor" id="submit-button" type="submit">제출</button>
+            <button class="checkin-minor" id="submit-button" type="submit">출석 체크</button>
         </div>
     </form>
 
