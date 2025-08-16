@@ -8,7 +8,7 @@ from app import app
 logger = logging.getLogger(__name__)
 
 # Default Google Apps Script URL from the provided files
-DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec"
+DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBvJKEtq9sOr6JkIPRjNUf_4xROrjfYzzAtlElzlUsUg69tv45QoupNosSsXKZQs7l/exec"
 
 @app.route('/')
 def dashboard():
@@ -36,16 +36,33 @@ def get_data():
             'limit': limit
         }
         
-        # Make POST request to Google Apps Script
-        response = requests.post(
-            script_url,
-            json=payload,
-            headers={
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            timeout=30
-        )
+        # Try GET request first (in case Apps Script supports it)
+        try:
+            get_response = requests.get(script_url, timeout=30)
+            if get_response.status_code == 200:
+                response = get_response
+            else:
+                # Fall back to POST request
+                response = requests.post(
+                    script_url,
+                    json=payload,
+                    headers={
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    timeout=30
+                )
+        except:
+            # Fall back to POST request
+            response = requests.post(
+                script_url,
+                json=payload,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                timeout=30
+            )
         
         logger.debug(f"Response status: {response.status_code}")
         logger.debug(f"Response headers: {response.headers}")

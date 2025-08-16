@@ -3,14 +3,16 @@
 This is an Arm Swing Dashboard application that visualizes sensor data from LOLIN D32 devices equipped with dual MPU6050 sensors. The system tracks arm swing movements for both left and right arms, collecting data on swing counts, distances, and motion patterns. The Flask web application serves as a dashboard that connects to a Google Apps Script endpoint to fetch and display real-time sensor data through interactive charts and comprehensive session statistics.
 
 ## Recent Changes (August 16, 2025)
-- Fixed dashboard data validation issues with test data containing Korean names and unrealistic values
-- Implemented comprehensive session statistics showing cumulative totals instead of per-window data
-- Added Right Share percentage alongside Left Share for complete balance analysis
-- Added 6 new statistics: Total Session Count, Session Duration, Average Swing Rate, Balance Score, and Data Points
-- Enhanced error handling with toast notifications and demo mode when only test data is available
-- Fixed JavaScript errors preventing proper dashboard functionality
-- Created standalone index.html file in root directory for direct access
-- Updated Flask routes to serve index.html as the main dashboard page
+- Successfully connected dashboard to real Google Sheets sensor data
+- Updated Google Apps Script with both read and write functions for proper data retrieval
+- Fixed session duration calculation to use actual data timespan instead of browser session time
+- Corrected average swing rate calculation from unrealistic 24,944/min to proper 4.5/min
+- Removed all data filtering limitations to display complete sensor data
+- Updated Apps Script URL to new deployment: AKfycbzBvJKEtq9sOr6JkIPRjNUf_4xROrjfYzzAtlElzlUsUg69tv45QoupNosSsXKZQs7l
+- Dashboard now shows realistic statistics: 1,189 total swings over 4h 22m session
+- Confirmed proper data flow from ESP32 → Google Sheets → Apps Script → Dashboard
+- All 12 statistics displaying correctly with real sensor measurements
+- Project successfully completed and fully functional
 
 # User Preferences
 

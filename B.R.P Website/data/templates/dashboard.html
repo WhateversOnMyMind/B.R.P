@@ -3,328 +3,756 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arm Swing Dashboard - LOLIN D32 Sensor Data</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <title>Arm Swing Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .status-connected {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+        
+        .status-demo {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        
+        .stat-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card .card-body {
+            padding: 25px 20px;
+        }
+        
+        .stat-card h3 {
+            font-weight: 700;
+            font-size: 2rem;
+            margin: 10px 0 0 0;
+        }
+        
+        .stat-card .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            margin: 20px 0;
+        }
+        
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .url-config {
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .toast {
+            z-index: 9999;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+            padding: 12px 15px;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .refresh-info {
+            background: rgba(23, 162, 184, 0.1);
+            border: 1px solid rgba(23, 162, 184, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            color: #17a2b8;
+            font-weight: 500;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
 </head>
 <body>
-    <!-- Header -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-chart-line me-2"></i>
-                Arm Swing Dashboard
-            </a>
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item">
-                    <span id="connection-status" class="badge bg-secondary">
-                        <i class="fas fa-circle me-1"></i>
-                        Connecting...
+    <!-- Toast container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
+
+    <div class="container">
+        <div class="dashboard-container">
+            <!-- Header Section -->
+            <div class="header-section">
+                <h1 class="mb-3">
+                    <i class="fas fa-chart-line me-3"></i>
+                    Arm Swing Dashboard
+                </h1>
+                <p class="lead mb-4">Real-time sensor data visualization for LOLIN D32 dual MPU6050 sensors</p>
+                <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+                    <span class="status-badge" id="connection-status">
+                        <i class="fas fa-circle"></i>
+                        <span>Checking connection...</span>
                     </span>
-                    <span id="demo-badge" class="badge bg-warning ms-2" style="display: none;">
-                        <i class="fas fa-flask me-1"></i>
-                        Demo Mode
+                    <span class="badge bg-light text-dark" id="last-update">
+                        Last update: Never
                     </span>
                 </div>
             </div>
-        </div>
-    </nav>
 
-    <div class="container-fluid py-4">
-        <!-- Configuration Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-cog me-2"></i>
-                            Configuration
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <label for="script-url" class="form-label">Google Apps Script URL:</label>
-                                <input type="url" class="form-control" id="script-url" 
-                                       placeholder="https://script.google.com/macros/s/.../exec">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">&nbsp;</label>
-                                <div class="d-grid">
-                                    <button class="btn btn-primary" id="refresh-btn">
-                                        <i class="fas fa-sync-alt me-2"></i>
-                                        Refresh Now
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Data automatically refreshes every 2 minutes 30 seconds. 
-                                    Last update: <span id="last-update">Never</span>
-                                </small>
+            <!-- Main Content -->
+            <div class="p-4">
+                <!-- Refresh Info -->
+                <div class="refresh-info">
+                    <i class="fas fa-sync-alt me-2"></i>
+                    Dashboard automatically refreshes every 2 minutes and 30 seconds
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row" id="stats-container">
+                    <!-- Left Count -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-hand-paper text-primary fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Left Count (Total)</h6>
+                                <h3 class="card-text" id="stat-left-count">-</h3>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-hand-paper text-primary fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Left Count (Total)</h6>
-                        <h3 class="card-text" id="stat-left-count">-</h3>
+                    <!-- Right Count -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-hand-paper text-success fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Right Count (Total)</h6>
+                                <h3 class="card-text" id="stat-right-count">-</h3>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-hand-paper text-success fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Right Count (Total)</h6>
-                        <h3 class="card-text" id="stat-right-count">-</h3>
+                    <!-- Left Distance -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-ruler text-info fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Left Distance (Total cm)</h6>
+                                <h3 class="card-text" id="stat-left-distance">-</h3>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-ruler text-info fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Left Distance (Total cm)</h6>
-                        <h3 class="card-text" id="stat-left-distance">-</h3>
+                    <!-- Right Distance -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-ruler text-warning fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Right Distance (Total cm)</h6>
+                                <h3 class="card-text" id="stat-right-distance">-</h3>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-ruler text-warning fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Right Distance (Total cm)</h6>
-                        <h3 class="card-text" id="stat-right-distance">-</h3>
+                    <!-- Total Distance -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-plus text-secondary fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Total Distance (Session cm)</h6>
+                                <h3 class="card-text" id="stat-total-distance">-</h3>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-plus text-secondary fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Total Distance (Session cm)</h6>
-                        <h3 class="card-text" id="stat-total-distance">-</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-percentage text-danger fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Left Share (%)</h6>
-                        <h3 class="card-text" id="stat-left-share">-</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Additional Stats Row -->
-        <div class="row mb-4">
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-percentage text-success fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Right Share (%)</h6>
-                        <h3 class="card-text" id="stat-right-share">-</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-chart-bar text-primary fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Total Count (Session)</h6>
-                        <h3 class="card-text" id="stat-total-count">-</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-clock text-info fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Session Duration</h6>
-                        <h3 class="card-text" id="stat-session-duration">-</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-tachometer-alt text-warning fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Avg. Swing Rate (/min)</h6>
-                        <h3 class="card-text" id="stat-avg-rate">-</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-balance-scale text-secondary fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Balance Score</h6>
-                        <h3 class="card-text" id="stat-balance-score">-</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-2 col-sm-6 mb-3">
-                <div class="card stat-card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-database text-dark fs-2 mb-2"></i>
-                        <h6 class="card-title text-muted">Data Points</h6>
-                        <h3 class="card-text" id="stat-data-points">-</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Row 1 -->
-        <div class="row mb-4">
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-chart-line me-2"></i>
-                            Distance Trends (Last 50 Windows)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="distance-chart" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Swing Counts (Last 50 Windows)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="count-chart" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Row 2 -->
-        <div class="row mb-4">
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-chart-area me-2"></i>
-                            Balance Analysis (Left vs Right)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="balance-chart" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-chart-pie me-2"></i>
-                            Current Session Summary
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="summary-chart" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Fluctuation Analysis -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-wave-square me-2"></i>
-                            Data Fluctuation Analysis (2.5 Min Windows)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="fluctuation-chart" height="150"></canvas>
-                        <div class="mt-3">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Shows standard deviation of total distance within each 2.5-minute window to analyze movement consistency.
-                            </small>
+                    <!-- Total Count -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calculator text-dark fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Total Session Count</h6>
+                                <h3 class="card-text" id="stat-total-count">-</h3>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Raw Data Table -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-table me-2"></i>
-                            Recent Data (Last 20 Records)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Left Count</th>
-                                        <th>Right Count</th>
-                                        <th>Left Distance (cm)</th>
-                                        <th>Right Distance (cm)</th>
-                                        <th>Total Distance (cm)</th>
-                                        <th>Left Share (%)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="data-table-body">
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted">
-                                            <i class="fas fa-spinner fa-spin me-2"></i>
-                                            Loading data...
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                <!-- Second Row of Statistics -->
+                <div class="row">
+                    <!-- Left Share -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-percentage text-primary fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Left Share</h6>
+                                <h3 class="card-text" id="stat-left-share">-%</h3>
+                            </div>
                         </div>
                     </div>
+                    <!-- Right Share -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-percentage text-success fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Right Share</h6>
+                                <h3 class="card-text" id="stat-right-share">-%</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Session Duration -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-clock text-info fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Session Duration</h6>
+                                <h3 class="card-text" id="stat-session-duration">-</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Average Swing Rate -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-tachometer-alt text-warning fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Average Swing Rate</h6>
+                                <h3 class="card-text" id="stat-avg-rate">-/min</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Balance Score -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-balance-scale text-secondary fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Balance Score</h6>
+                                <h3 class="card-text" id="stat-balance-score">-</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Data Points -->
+                    <div class="col-md-2 col-sm-6 mb-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-database text-dark fs-2 mb-2"></i>
+                                <h6 class="card-title text-muted">Data Points</h6>
+                                <h3 class="card-text" id="stat-data-points">-</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4 class="chart-title">Swing Count Trends</h4>
+                            <canvas id="swingChart" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4 class="chart-title">Distance Trends</h4>
+                            <canvas id="distanceChart" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Section -->
+                <div class="url-config">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cog me-2"></i>
+                        Configuration
+                    </h5>
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <label for="scriptUrl" class="form-label">Google Apps Script URL:</label>
+                            <input type="text" class="form-control" id="scriptUrl" 
+                                   placeholder="Enter your Google Apps Script URL">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary w-100" onclick="dashboard.updateScriptUrl()">
+                                <i class="fas fa-save me-2"></i>Update URL
+                            </button>
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        Current URL: <span id="current-url">Using default endpoint</span>
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        class ArmSwingDashboard {
+            constructor() {
+                this.swingChart = null;
+                this.distanceChart = null;
+                this.refreshInterval = null;
+                this.scriptUrl = this.getStoredUrl();
+                this.sessionStartTime = Date.now();
+                this.allDataPoints = [];
+                
+                this.init();
+            }
+
+            init() {
+                this.initializeCharts();
+                this.updateCurrentUrlDisplay();
+                this.fetchData();
+                this.startAutoRefresh();
+            }
+
+            getStoredUrl() {
+                const stored = localStorage.getItem('dashboardScriptUrl');
+                return stored || 'https://script.google.com/macros/s/AKfycbzBvJKEtq9sOr6JkIPRjNUf_4xROrjfYzzAtlElzlUsUg69tv45QoupNosSsXKZQs7l/exec';
+            }
+
+            updateCurrentUrlDisplay() {
+                const urlDisplay = document.getElementById('current-url');
+                const isDefault = this.scriptUrl === 'https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec';
+                urlDisplay.textContent = isDefault ? 'Using default endpoint' : this.scriptUrl;
+            }
+
+            updateScriptUrl() {
+                const newUrl = document.getElementById('scriptUrl').value.trim();
+                if (!newUrl) {
+                    this.showToast('Please enter a valid URL', 'warning');
+                    return;
+                }
+
+                this.scriptUrl = newUrl;
+                localStorage.setItem('dashboardScriptUrl', newUrl);
+                this.updateCurrentUrlDisplay();
+                document.getElementById('scriptUrl').value = '';
+                
+                this.showToast('URL updated successfully! Refreshing data...', 'success');
+                this.fetchData();
+            }
+
+            initializeCharts() {
+                // Swing Count Chart
+                const swingCtx = document.getElementById('swingChart').getContext('2d');
+                this.swingChart = new Chart(swingCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: 'Left Arm',
+                                data: [],
+                                borderColor: '#4f79c4',
+                                backgroundColor: 'rgba(79, 121, 196, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            },
+                            {
+                                label: 'Right Arm',
+                                data: [],
+                                borderColor: '#28a745',
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Distance Chart
+                const distanceCtx = document.getElementById('distanceChart').getContext('2d');
+                this.distanceChart = new Chart(distanceCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: 'Left Arm (cm)',
+                                data: [],
+                                borderColor: '#17a2b8',
+                                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            },
+                            {
+                                label: 'Right Arm (cm)',
+                                data: [],
+                                borderColor: '#ffc107',
+                                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async fetchData() {
+                try {
+                    const response = await fetch(`/api/data?url=${encodeURIComponent(this.scriptUrl)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        throw new Error(result.error);
+                    }
+
+                    this.processData(result.data);
+                    this.updateConnectionStatus(true);
+                    this.updateLastUpdateTime();
+                    
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    this.updateConnectionStatus(false, error.message);
+                    this.showToast('Failed to fetch data from Google Sheets. Please check your connection.', 'danger');
+                }
+            }
+
+            processData(rawData) {
+                if (!rawData || rawData.length === 0) {
+                    this.showToast('No data available in Google Sheets. Please ensure your ESP32 is sending data.', 'warning');
+                    this.clearDashboard();
+                    return;
+                }
+
+                // Only filter out header row - accept all other data
+                const validData = rawData.filter(row => {
+                    const timestamp = row.timestamp;
+                    
+                    // Skip header row only
+                    if (timestamp === 'name' || timestamp === 'timestamp') return false;
+                    
+                    return true;
+                });
+
+                if (validData.length === 0) {
+                    this.showToast('Only header data found. Please check your Google Sheets data.', 'warning');
+                    this.clearDashboard();
+                    return;
+                }
+
+                this.allDataPoints = validData;
+                this.updateCharts(validData);
+                this.updateStatistics(validData);
+            }
+
+            clearDashboard() {
+                // Clear all statistics
+                document.getElementById('stat-left-count').textContent = '-';
+                document.getElementById('stat-right-count').textContent = '-';
+                document.getElementById('stat-left-distance').textContent = '-';
+                document.getElementById('stat-right-distance').textContent = '-';
+                document.getElementById('stat-total-distance').textContent = '-';
+                document.getElementById('stat-total-count').textContent = '-';
+                document.getElementById('stat-left-share').textContent = '-%';
+                document.getElementById('stat-right-share').textContent = '-%';
+                document.getElementById('stat-session-duration').textContent = '-';
+                document.getElementById('stat-avg-rate').textContent = '-/min';
+                document.getElementById('stat-balance-score').textContent = '-';
+                document.getElementById('stat-data-points').textContent = '-';
+
+                // Clear charts
+                this.swingChart.data.labels = [];
+                this.swingChart.data.datasets[0].data = [];
+                this.swingChart.data.datasets[1].data = [];
+                this.swingChart.update();
+
+                this.distanceChart.data.labels = [];
+                this.distanceChart.data.datasets[0].data = [];
+                this.distanceChart.data.datasets[1].data = [];
+                this.distanceChart.update();
+
+                this.allDataPoints = [];
+            }
+
+            updateCharts(data) {
+                const labels = data.map(row => {
+                    const date = new Date(row.timestamp);
+                    return date.toLocaleTimeString();
+                });
+
+                const leftCounts = data.map(row => parseInt(row.leftCount) || 0);
+                const rightCounts = data.map(row => parseInt(row.rightCount) || 0);
+                const leftDistances = data.map(row => parseInt(row.leftDistance) || 0);
+                const rightDistances = data.map(row => parseInt(row.rightDistance) || 0);
+
+                // Update swing chart
+                this.swingChart.data.labels = labels;
+                this.swingChart.data.datasets[0].data = leftCounts;
+                this.swingChart.data.datasets[1].data = rightCounts;
+                this.swingChart.update();
+
+                // Update distance chart
+                this.distanceChart.data.labels = labels;
+                this.distanceChart.data.datasets[0].data = leftDistances;
+                this.distanceChart.data.datasets[1].data = rightDistances;
+                this.distanceChart.update();
+            }
+
+            updateStatistics(data) {
+                if (data.length === 0) return;
+
+                // Calculate cumulative totals across entire session
+                const totalLeftCount = data.reduce((sum, row) => sum + (parseInt(row.leftCount) || 0), 0);
+                const totalRightCount = data.reduce((sum, row) => sum + (parseInt(row.rightCount) || 0), 0);
+                const totalLeftDistance = data.reduce((sum, row) => sum + (parseInt(row.leftDistance) || 0), 0);
+                const totalRightDistance = data.reduce((sum, row) => sum + (parseInt(row.rightDistance) || 0), 0);
+                
+                const totalCount = totalLeftCount + totalRightCount;
+                const totalDistance = totalLeftDistance + totalRightDistance;
+                
+                // Calculate percentages
+                const leftShare = totalCount > 0 ? ((totalLeftCount / totalCount) * 100).toFixed(1) : 0;
+                const rightShare = totalCount > 0 ? ((totalRightCount / totalCount) * 100).toFixed(1) : 0;
+                
+                // Calculate session duration based on actual data timespan
+                const firstTimestamp = new Date(data[0].timestamp);
+                const lastTimestamp = new Date(data[data.length - 1].timestamp);
+                const sessionDurationMs = Math.max(lastTimestamp - firstTimestamp, 60000); // Minimum 1 minute
+                const sessionDuration = this.formatDurationMs(sessionDurationMs);
+                
+                // Calculate average swing rate (swings per minute) based on actual data timespan
+                const sessionMinutes = sessionDurationMs / (1000 * 60);
+                const avgRate = sessionMinutes > 0 ? (totalCount / sessionMinutes).toFixed(1) : 0;
+                
+                // Calculate balance score (100 = perfect balance)
+                const balanceScore = totalCount > 0 ? (100 - Math.abs(50 - parseFloat(leftShare))).toFixed(1) : 100;
+
+                // Update DOM
+                document.getElementById('stat-left-count').textContent = totalLeftCount.toLocaleString();
+                document.getElementById('stat-right-count').textContent = totalRightCount.toLocaleString();
+                document.getElementById('stat-left-distance').textContent = totalLeftDistance.toLocaleString();
+                document.getElementById('stat-right-distance').textContent = totalRightDistance.toLocaleString();
+                document.getElementById('stat-total-distance').textContent = totalDistance.toLocaleString();
+                document.getElementById('stat-total-count').textContent = totalCount.toLocaleString();
+                document.getElementById('stat-left-share').textContent = leftShare + '%';
+                document.getElementById('stat-right-share').textContent = rightShare + '%';
+                document.getElementById('stat-session-duration').textContent = sessionDuration;
+                document.getElementById('stat-avg-rate').textContent = avgRate + '/min';
+                document.getElementById('stat-balance-score').textContent = balanceScore;
+                document.getElementById('stat-data-points').textContent = data.length.toLocaleString();
+            }
+
+            formatDuration(milliseconds) {
+                const seconds = Math.floor(milliseconds / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                
+                if (hours > 0) {
+                    return `${hours}h ${minutes % 60}m`;
+                } else if (minutes > 0) {
+                    return `${minutes}m ${seconds % 60}s`;
+                } else {
+                    return `${seconds}s`;
+                }
+            }
+
+            formatDurationMs(ms) {
+                const seconds = Math.floor((ms / 1000) % 60);
+                const minutes = Math.floor((ms / (1000 * 60)) % 60);
+                const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+                const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+                
+                if (days > 0) {
+                    return `${days}d ${hours}h ${minutes}m`;
+                } else if (hours > 0) {
+                    return `${hours}h ${minutes}m`;
+                } else if (minutes > 0) {
+                    return `${minutes}m ${seconds}s`;
+                } else {
+                    return `${seconds}s`;
+                }
+            }
+
+            updateConnectionStatus(connected, errorMessage = '') {
+                const statusElement = document.getElementById('connection-status');
+                const statusIcon = statusElement.querySelector('i');
+                const statusText = statusElement.querySelector('span');
+
+                if (connected) {
+                    statusElement.className = 'status-badge status-connected';
+                    statusIcon.className = 'fas fa-circle';
+                    statusText.textContent = 'Connected to Google Sheets';
+                } else {
+                    statusElement.className = 'status-badge status-demo';
+                    statusIcon.className = 'fas fa-exclamation-triangle';
+                    statusText.textContent = 'Connection failed';
+                }
+            }
+
+            updateLastUpdateTime() {
+                const now = new Date();
+                document.getElementById('last-update').textContent = 
+                    `Last update: ${now.toLocaleTimeString()}`;
+            }
+
+            startAutoRefresh() {
+                // Refresh every 2 minutes and 30 seconds (150000 ms)
+                this.refreshInterval = setInterval(() => {
+                    this.fetchData();
+                }, 150000);
+            }
+
+            showToast(message, type = 'info') {
+                const toastContainer = document.getElementById('toast-container');
+                const toastId = 'toast-' + Date.now();
+                
+                const toastHtml = `
+                    <div class="toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header">
+                            <i class="fas fa-info-circle me-2 text-${type}"></i>
+                            <strong class="me-auto">Dashboard</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">${message}</div>
+                    </div>
+                `;
+                
+                toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                const toastElement = document.getElementById(toastId);
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                
+                // Remove toast element after it's hidden
+                toastElement.addEventListener('hidden.bs.toast', () => {
+                    toastElement.remove();
+                });
+            }
+        }
+
+        // Initialize dashboard when page loads
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboard = new ArmSwingDashboard();
+        });
+    </script>
 </body>
 </html>

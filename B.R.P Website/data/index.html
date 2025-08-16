@@ -387,7 +387,7 @@
 
             getStoredUrl() {
                 const stored = localStorage.getItem('dashboardScriptUrl');
-                return stored || 'https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec';
+                return stored || 'https://script.google.com/macros/s/AKfycbzBvJKEtq9sOr6JkIPRjNUf_4xROrjfYzzAtlElzlUsUg69tv45QoupNosSsXKZQs7l/exec';
             }
 
             updateCurrentUrlDisplay() {
@@ -533,36 +533,30 @@
                 } catch (error) {
                     console.error('Error fetching data:', error);
                     this.updateConnectionStatus(false, error.message);
-                    this.generateDemoData();
+                    this.showToast('Failed to fetch data from Google Sheets. Please check your connection.', 'danger');
                 }
             }
 
             processData(rawData) {
                 if (!rawData || rawData.length === 0) {
-                    this.generateDemoData();
+                    this.showToast('No data available in Google Sheets. Please ensure your ESP32 is sending data.', 'warning');
+                    this.clearDashboard();
                     return;
                 }
 
-                // Filter out invalid data (header row, Korean names, unrealistic values)
+                // Only filter out header row - accept all other data
                 const validData = rawData.filter(row => {
                     const timestamp = row.timestamp;
-                    const leftCount = parseInt(row.leftCount) || 0;
-                    const rightCount = parseInt(row.rightCount) || 0;
                     
-                    // Skip header row
+                    // Skip header row only
                     if (timestamp === 'name' || timestamp === 'timestamp') return false;
-                    
-                    // Skip Korean names (test data)
-                    if (/[\u3131-\u3163\uac00-\ud7a3]/.test(timestamp)) return false;
-                    
-                    // Skip unrealistic values (> 100,000)
-                    if (leftCount > 100000 || rightCount > 100000) return false;
                     
                     return true;
                 });
 
                 if (validData.length === 0) {
-                    this.generateDemoData();
+                    this.showToast('Only header data found. Please check your Google Sheets data.', 'warning');
+                    this.clearDashboard();
                     return;
                 }
 
@@ -572,27 +566,33 @@
                 this.updateStatistics(validData);
             }
 
-            generateDemoData() {
-                this.isDemo = true;
-                const now = Date.now();
-                const demoData = [];
-                
-                // Generate 10 demo data points
-                for (let i = 0; i < 10; i++) {
-                    const timestamp = new Date(now - (9-i) * 150000); // 2.5 minutes apart
-                    demoData.push({
-                        timestamp: timestamp.toISOString(),
-                        leftCount: 15 + Math.floor(Math.random() * 20),
-                        leftDistance: 45 + Math.floor(Math.random() * 30),
-                        rightCount: 12 + Math.floor(Math.random() * 18),
-                        rightDistance: 38 + Math.floor(Math.random() * 25)
-                    });
-                }
-                
-                this.allDataPoints = demoData;
-                this.updateCharts(demoData);
-                this.updateStatistics(demoData);
-                this.showToast('Displaying demo data - Connect your ESP32 to see real sensor data', 'info');
+            clearDashboard() {
+                // Clear all statistics
+                document.getElementById('stat-left-count').textContent = '-';
+                document.getElementById('stat-right-count').textContent = '-';
+                document.getElementById('stat-left-distance').textContent = '-';
+                document.getElementById('stat-right-distance').textContent = '-';
+                document.getElementById('stat-total-distance').textContent = '-';
+                document.getElementById('stat-total-count').textContent = '-';
+                document.getElementById('stat-left-share').textContent = '-%';
+                document.getElementById('stat-right-share').textContent = '-%';
+                document.getElementById('stat-session-duration').textContent = '-';
+                document.getElementById('stat-avg-rate').textContent = '-/min';
+                document.getElementById('stat-balance-score').textContent = '-';
+                document.getElementById('stat-data-points').textContent = '-';
+
+                // Clear charts
+                this.swingChart.data.labels = [];
+                this.swingChart.data.datasets[0].data = [];
+                this.swingChart.data.datasets[1].data = [];
+                this.swingChart.update();
+
+                this.distanceChart.data.labels = [];
+                this.distanceChart.data.datasets[0].data = [];
+                this.distanceChart.data.datasets[1].data = [];
+                this.distanceChart.update();
+
+                this.allDataPoints = [];
             }
 
             updateCharts(data) {
@@ -635,11 +635,14 @@
                 const leftShare = totalCount > 0 ? ((totalLeftCount / totalCount) * 100).toFixed(1) : 0;
                 const rightShare = totalCount > 0 ? ((totalRightCount / totalCount) * 100).toFixed(1) : 0;
                 
-                // Calculate session duration
-                const sessionDuration = this.formatDuration(Date.now() - this.sessionStartTime);
+                // Calculate session duration based on actual data timespan
+                const firstTimestamp = new Date(data[0].timestamp);
+                const lastTimestamp = new Date(data[data.length - 1].timestamp);
+                const sessionDurationMs = Math.max(lastTimestamp - firstTimestamp, 60000); // Minimum 1 minute
+                const sessionDuration = this.formatDurationMs(sessionDurationMs);
                 
-                // Calculate average swing rate (swings per minute)
-                const sessionMinutes = (Date.now() - this.sessionStartTime) / (1000 * 60);
+                // Calculate average swing rate (swings per minute) based on actual data timespan
+                const sessionMinutes = sessionDurationMs / (1000 * 60);
                 const avgRate = sessionMinutes > 0 ? (totalCount / sessionMinutes).toFixed(1) : 0;
                 
                 // Calculate balance score (100 = perfect balance)
@@ -674,19 +677,36 @@
                 }
             }
 
+            formatDurationMs(ms) {
+                const seconds = Math.floor((ms / 1000) % 60);
+                const minutes = Math.floor((ms / (1000 * 60)) % 60);
+                const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+                const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+                
+                if (days > 0) {
+                    return `${days}d ${hours}h ${minutes}m`;
+                } else if (hours > 0) {
+                    return `${hours}h ${minutes}m`;
+                } else if (minutes > 0) {
+                    return `${minutes}m ${seconds}s`;
+                } else {
+                    return `${seconds}s`;
+                }
+            }
+
             updateConnectionStatus(connected, errorMessage = '') {
                 const statusElement = document.getElementById('connection-status');
                 const statusIcon = statusElement.querySelector('i');
                 const statusText = statusElement.querySelector('span');
 
-                if (connected && !this.isDemo) {
+                if (connected) {
                     statusElement.className = 'status-badge status-connected';
                     statusIcon.className = 'fas fa-circle';
-                    statusText.textContent = 'Connected to sensor data';
+                    statusText.textContent = 'Connected to Google Sheets';
                 } else {
                     statusElement.className = 'status-badge status-demo';
                     statusIcon.className = 'fas fa-exclamation-triangle';
-                    statusText.textContent = this.isDemo ? 'Demo mode' : 'Connection error';
+                    statusText.textContent = 'Connection failed';
                 }
             }
 
