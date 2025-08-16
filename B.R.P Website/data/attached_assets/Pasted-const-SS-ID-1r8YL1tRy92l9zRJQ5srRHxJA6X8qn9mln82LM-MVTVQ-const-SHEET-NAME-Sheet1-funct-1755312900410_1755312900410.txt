@@ -1,0 +1,89 @@
+const SS_ID = '1r8YL1tRy92l9zRJQ5srRHxJA6X8qn9mln82LM-MVTVQ';
+const SHEET_NAME = 'Sheet1';
+
+function doPost(e) {
+  const book  = SpreadsheetApp.openById(SS_ID);
+  const sheet = book.getSheetByName(SHEET_NAME);
+
+  const p = (e && e.parameter) || {};
+  let body = {};
+  try { body = e && e.postData && e.postData.contents ? JSON.parse(e.postData.contents) : {}; } catch (_) {}
+  const q = Object.assign({}, p, body);                       // unified params
+  const action = String(q.action || '').toLowerCase();
+
+  // --- NEW: read endpoint for dashboard (POST) ---
+  if (action === 'read') {
+    const limit = Math.max(1, Math.min(1000, parseInt(q.limit || 200)));
+    const values = sheet.getDataRange().getValues();
+    if (!values.length) {
+      return ContentService.createTextOutput(JSON.stringify({ data: [] }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Try to map by header row if present; else assume columns:
+    // A: timestamp, B: leftCount, C: leftDistance, D: rightCount, E: rightDistance
+    let startRow = 0;
+    let idx = { ts: 0, lc: 1, ld: 2, rc: 3, rd: 4 };
+    const header = values[0].map(String);
+    const headersLC = header.map(h => h.toLowerCase());
+    const tryIdx = (name) => headersLC.indexOf(name);
+
+    if (headersLC.includes('timestamp') || headersLC.includes('time') ||
+        headersLC.includes('leftcount') || headersLC.includes('leftdistance')) {
+      startRow = 1;
+      const ts = tryIdx('timestamp') >= 0 ? tryIdx('timestamp') : tryIdx('time');
+      const lc = tryIdx('leftcount');
+      const ld = tryIdx('leftdistance');
+      const rc = tryIdx('rightcount');
+      const rd = tryIdx('rightdistance');
+      if (ts >= 0) idx.ts = ts;
+      if (lc >= 0) idx.lc = lc;
+      if (ld >= 0) idx.ld = ld;
+      if (rc >= 0) idx.rc = rc;
+      if (rd >= 0) idx.rd = rd;
+    }
+
+    const rows = values.slice(startRow);
+    const take = rows.slice(Math.max(0, rows.length - limit));
+
+    const data = take.map(r => ({
+      timestamp: r[idx.ts] instanceof Date ? r[idx.ts].toISOString() : r[idx.ts],
+      leftCount: Number(r[idx.lc]) || 0,
+      leftDistance: Number(r[idx.ld]) || 0,
+      rightCount: Number(r[idx.rc]) || 0,
+      rightDistance: Number(r[idx.rd]) || 0,
+    }));
+
+    return ContentService.createTextOutput(JSON.stringify({ data }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // --- Your existing CHECK-IN branch (kept) ---
+  if (q.checkin === 'TRUE') {
+    const data = sheet.getDataRange().getDisplayValues();
+    for (let i = 1; i < data.length; i++) {
+      if (
+        data[i][0] === q.name  &&
+        data[i][1] === q.id    &&
+        data[i][2] === q.blind &&
+        data[i][3] === q.event &&
+        data[i][4] === q.record
+      ) {
+        sheet.getRange(i+1, 6).setValue('TRUE');
+        return HtmlService.createHtmlOutput('체크인 완료!');
+      }
+    }
+    return HtmlService.createHtmlOutput('신청 정보가 없습니다.');
+  }
+
+  // --- Your existing SIGN-UP branch (kept) ---
+  sheet.appendRow([
+    q.name   || '',
+    q.id     || '',
+    q.blind  || '',
+    q.event  || '',
+    q.record || '',
+    'FALSE'
+  ]);
+  return HtmlService.createHtmlOutput('신청이 성공적으로 제출되었습니다!');
+}
