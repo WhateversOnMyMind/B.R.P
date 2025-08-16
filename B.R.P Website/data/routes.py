@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import logging
-from flask import render_template, jsonify, request
+from flask import render_template, jsonify, request, send_from_directory
 from app import app
 
 logger = logging.getLogger(__name__)
@@ -13,6 +13,11 @@ DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00
 @app.route('/')
 def dashboard():
     """Serve the main dashboard page"""
+    return send_from_directory('.', 'index.html')
+
+@app.route('/dashboard')
+def dashboard_template():
+    """Alternative route to serve dashboard via template"""
     return render_template('dashboard.html')
 
 @app.route('/api/data')

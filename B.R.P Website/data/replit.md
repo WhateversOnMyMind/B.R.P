@@ -9,6 +9,8 @@ This is an Arm Swing Dashboard application that visualizes sensor data from LOLI
 - Added 6 new statistics: Total Session Count, Session Duration, Average Swing Rate, Balance Score, and Data Points
 - Enhanced error handling with toast notifications and demo mode when only test data is available
 - Fixed JavaScript errors preventing proper dashboard functionality
+- Created standalone index.html file in root directory for direct access
+- Updated Flask routes to serve index.html as the main dashboard page
 
 # User Preferences
 
