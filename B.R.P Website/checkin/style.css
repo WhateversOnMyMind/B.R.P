@@ -1,87 +1,202 @@
-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #1f1f1f;
-    font-family: "Nanum Gothic", "Poppins";
-    font-weight: 1000;
-    font-style: normal;
+/* ========= Theme tokens ========= */
+:root{
+    --bg:#1f1f1f;
+    --text:#0f172a;
+    --fg:#ffffff;
+    --muted:#cbd5e1;
+    --accent:#00bbfd;
+    --accent-ink:#0b1020;
+    --border:#2a2a2a;
+    --radius:16px;
+    --radius-sm:10px;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --header-h: clamp(70px, 20vh, 160px);
 }
-h2 {
-    color: white;
+
+/* ========= Base ========= */
+*,
+*::before,
+*::after{ box-sizing:border-box; }
+
+html, body{
+    margin:0;
+    padding:0;
 }
-main {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    background-image: url(https://d1laub10p5ibfa.cloudfront.net/2023/03/Take-Part-Find-a-Guide-Become-Guide-Runner-hero.webp);
-    background-size: cover;
+
+body{
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--fg);
+    font-family:"Nanum Gothic","Poppins",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    font-weight:1000;
+    padding-top:var(--header-h);
 }
-#checkin {
-    border-radius: 25px;
-    padding: 15px;
-    width: 100%;
-    height: 40vh;
-    font-size: 30px;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
+.container{
+    width:min(960px, 92vw);
+    margin-inline:auto;
+    padding-inline:16px;
 }
-.checkin-major {
-    background-color: rgba(0, 187, 253, 0.5);
-    border-radius: 15px;
-    padding: 15px;
-    font-family: 'Gamja Flower';
+
+.sr-only{
+    position:absolute!important;
+    width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
 }
-#name, #blind, #event {
-    border-radius: 5px;
-    border-width: 0px;
+
+.skip-link{
+    position:absolute;left:12px;top:8px;z-index:1000;
+    padding:8px 12px;border-radius:10px;
+    background:var(--accent);color:var(--accent-ink);
+    transform:translateY(-150%);transition:transform .2s ease;
 }
-#submit-button {
-    border-radius: 5px;
-    border-width: 0px;
-    background-color: lightgray;
+.skip-link:focus{ transform:translateY(0); outline:2px solid var(--accent); }
+
+/* ========= Header ========= */
+.site-header{
+    position:fixed;inset:0 0 auto 0;height:var(--header-h);z-index:50;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    background:rgba(17,17,17,.55);
+    backdrop-filter:saturate(160%) blur(8px);
 }
-#submit-button:hover {
-    background-color: gray;
+.header-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    height:100%;
 }
-header {
-    position: fixed;
-    width: 100%;
-    height: 20vh;
-    top:0;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    flex-direction: column;
-    border-width: 1px;
-    border-color: lightgray;
-    border-style: solid;
-    padding: 12px;
-    background-color: white;
-    background-color: rgba(256, 256, 256, 0.5);
+.logo{
+    font-family:"Poppins","Gamja Flower",system-ui,sans-serif;
+    font-size:clamp(24px, 3vw + 10px, 36px);
+    letter-spacing:.2em;margin:0;color:#fff;
 }
-#vmk {
-    color: #ffffff;
-    font-size: 50px;
-    font-weight: 900;
-    font-family: "Poppins"
+.brand{ text-decoration:none; }
+.navlinks{ display:flex; gap:16px; flex-wrap:wrap; }
+.navlinks a{
+    color:#e5e7eb; text-decoration:none; font-weight:700;
+    padding:6px 10px; border-radius:10px;
+    transition:background-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
-.navlinks {
-    display: flex;
-    gap: 25px;
-    width: 100%;
-    justify-content: space-evenly;
+.navlinks a:hover, .navlinks a:focus-visible{
+    color:#111827; background:#e5f7ff; outline:none;
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
 }
-.navlinks a {
-    text-decoration: none;
-    color: #ffffff;
+
+/* ========= Main (hero) ========= */
+main{
+    position:relative; isolation:isolate;
+    min-height:calc(100vh - var(--header-h));
+    display:flex; align-items:center;
+    background-image:url(https://d1laub10p5ibfa.cloudfront.net/2023/03/Take-Part-Find-a-Guide-Become-Guide-Runner-hero.webp);
+    background-size:cover; background-position:center;
+    padding:32px 0 56px;
 }
+main::before{
+    content:""; position:absolute; inset:0; z-index:0;
+    background:linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,.35));
+}
+.page-intro{ position:relative; z-index:1; padding-block: 12px; }
+.page-title{
+    margin:0 0 6px 0; font-weight:800; letter-spacing:-.01em; color:#fff;
+    text-shadow:0 2px 12px rgba(0,0,0,.35);
+}
+.page-sub{ margin:0; color:#cbd5e1; }
+
+/* ========= Card/Form ========= */
+.card{
+    position:relative; z-index:1;
+    background:rgba(0,0,0,.55);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:clamp(16px, 3vw, 28px);
+}
+
+/* Make the FORM the outer grid so the right-side button matches full height */
+#checkin{
+    display:grid;
+    grid-template-columns:1fr;     /* mobile: stacked */
+    gap:14px;
+    align-items:stretch;
+}
+
+.form-fields{
+    display:grid;
+    grid-template-columns:1fr;     /* mobile 1-col */
+    gap:14px;
+}
+
+@media (min-width:640px){
+    #checkin{ grid-template-columns: 1fr 140px; } /* fields + tall button col */
+    .form-fields{ grid-template-columns:1fr 1fr; }
+    .checkbox-field{ grid-column:1 / -1; } /* full width */
+    .form-actions{
+        grid-column:2; grid-row:1; align-self:stretch;
+        display:grid; align-content:start; gap:12px;
+    }
+}
+
+/* field block */
+.field{ display:flex; flex-direction:column; gap:8px; }
+
+/* Inputs */
+label{
+    font-family:"Nanum Gothic","Poppins",sans-serif;
+    font-weight:800; letter-spacing:-.01em; color:#fff;
+}
+.required{ color:#ef4444; }
+
+input[type="text"],
+input[type="number"]{
+    width:100%; padding:12px 14px; font-size:16px;
+    border-radius:10px; border:1px solid rgba(255,255,255,.18);
+    background:rgba(17,17,17,.6); color:#fff; outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+input::placeholder{ color:#9aa5b1; }
+input:focus-visible{
+    border-color:var(--accent);
+    box-shadow:0 0 0 4px rgba(0,187,253,.25);
+    background:rgba(17,17,17,.8);
+}
+
+/* Checkbox */
+.checkbox-field{ flex-direction:row; align-items:center; gap:10px; }
+#blind{ width:20px; height:20px; border-radius:5px; accent-color:var(--accent); }
+
+/* Actions */
+.btn-primary{
+    cursor:pointer;
+    padding:12px 18px;
+    border-radius:12px;
+    border:1px solid rgba(0,187,253,.45);
+    background:linear-gradient(180deg, var(--accent), #07a7ea);
+    color:var(--accent-ink);
+    font-weight:900;
+    font-family:"Poppins","Nanum Gothic",sans-serif;
+    transition:transform .05s ease, box-shadow .15s ease, opacity .15s ease, background-color .15s ease;
+    box-shadow:0 10px 24px rgba(0,187,253,.25);
+}
+
+/* Fill the right column fully (tall button) */
+#submit-button{
+    width:100%; height:100%;
+    align-self:stretch; justify-self:stretch;
+}
+.btn-primary:hover{ opacity:.95; box-shadow:0 12px 28px rgba(0,187,253,.32); }
+.btn-primary:active{ transform:translateY(1px); }
+.btn-primary:focus-visible{
+    outline:none; box-shadow:0 0 0 4px rgba(0,187,253,.35), 0 10px 24px rgba(0,187,253,.25);
+}
+
+.form-note{ color:#cbd5e1; font-size:12px; margin:0; }
+.form-alert{
+    margin-top:12px; padding:10px 12px; border-radius:10px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 30%, rgba(255,255,255,.12));
+    color:#fff;
+}
+
+/* Small tweaks */
+@media (max-width:480px){ .logo{ font-size:32px; } }
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }

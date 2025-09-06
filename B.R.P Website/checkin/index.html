@@ -1,71 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>B.R.P 신청</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Nanum+Gothic&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <title>B.R.P 출석 체크 — VMK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Nanum+Gothic:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<header>
-    <a href="https://blindrunning.com">
-        <h1 id="vmk">V M K</h1>
-    </a>
-    <div class="navlinks">
-        <a href="#">asdf</a>
-        <a href="#">asdf</a>
-        <a href="#">asdf</a>
-        <a href="#">asdf</a>
+<a class="skip-link" href="#main">본문 바로가기</a>
+
+<header class="site-header">
+    <div class="container header-inner">
+        <a class="brand" href="https://blindrunning.com" aria-label="Blind Running 홈으로">
+            <h1 id="vmk" class="logo" aria-label="V M K">V M K</h1>
+        </a>
+        <nav class="navlinks" aria-label="주요 메뉴">
+            <a href="#" aria-current="page">asdf</a>
+            <a href="#">asdf</a>
+            <a href="#">asdf</a>
+            <a href="#">asdf</a>
+        </nav>
     </div>
 </header>
-<main>
-    <form id="checkin" action="https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec" method="POST" target="_blank">
-        <div class="checkin-major">
-            <strong>신청할 때 입력한 값을 동일하게 입력해 주세요</strong>
-            <div class="checkin-minor">
-                <label>이름을 입력해 주세요:</label>
-                <input type="text" id="name" name="name" required>
+
+<main id="main">
+    <div class="container">
+        <section class="page-intro">
+            <h2 class="page-title">VMK 출석 체크</h2>
+            <p class="page-sub">신청할 때 입력한 값을 <strong>동일하게</strong> 입력해 주세요.</p>
+        </section>
+
+        <!-- 기존 Apps Script 엔드포인트/필드명 그대로 유지 -->
+        <form
+                id="checkin"
+                class="card"
+                action="https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec"
+                method="POST"
+                target="_blank"
+                autocomplete="on"
+        >
+            <fieldset class="form-fields">
+                <legend class="sr-only">출석 체크 정보 입력</legend>
+
+                <div class="field">
+                    <label for="name">이름 <span class="required" aria-hidden="true">*</span></label>
+                    <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            autocomplete="name"
+                            placeholder="홍길동"
+                            required
+                    />
+                </div>
+
+                <div class="field">
+                    <label for="id">1368 ID</label>
+                    <input
+                            type="text"
+                            id="id"
+                            name="id"
+                            inputmode="numeric"
+                            placeholder="예: 12345678"
+                    />
+                </div>
+
+                <div class="field checkbox-field">
+                    <!-- 체크박스 미체크 시 FALSE를 전송하기 위한 hidden -->
+                    <input type="hidden" name="blind" value="FALSE" />
+                    <input type="checkbox" id="blind" name="blind" value="TRUE" />
+                    <label for="blind">시각장애인 러너입니다</label>
+                </div>
+
+                <div class="field">
+                    <label for="event">이벤트 코드 <span class="required" aria-hidden="true">*</span></label>
+                    <input
+                            type="number"
+                            id="event"
+                            name="event"
+                            inputmode="numeric"
+                            placeholder="예: 240903"
+                            min="0"
+                            step="1"
+                            required
+                    />
+                </div>
+
+                <div class="field">
+                    <label for="record">10km 기록 (분)</label>
+                    <input
+                            type="number"
+                            id="record"
+                            name="record"
+                            inputmode="numeric"
+                            placeholder="예: 55"
+                            min="0"
+                            step="1"
+                    />
+                </div>
+            </fieldset>
+
+            <!-- tall 버튼: 데스크톱에서 우측 세로로 꽉 차게 -->
+            <div class="form-actions">
+                <input type="hidden" name="checkin" value="TRUE" />
+                <button id="submit-button" class="btn-primary" type="submit">출석 체크</button>
             </div>
 
-            <br>
-
-            <div class="checkin-minor">
-                <label>1368 ID를 입력해 주세요</label>
-                <input type="text" id="id" name="id">
-            </div>
-
-            <br>
-
-            <div class="checkin-minor">
-                <label>시각장애인 러너 여부를 입력해 주세요:</label>
-                <input type="hidden" name="blind" value="FALSE">
-                <input type="checkbox" id="blind" name="blind" value="TRUE">
-            </div>
-
-            <br>
-
-            <div class="checkin-minor">
-                <label>이벤트 코드를 입력해 주세요:</label>
-                <input type="number" id="event" name="event" required>
-            </div>
-
-            <div class="checkin-minor">
-                <label>10km 기록 (분 단위)</label>
-                <input type="number" id="record" name="record">
-            </div>
-
-            <br>
-            <input type="hidden" name="checkin" value="TRUE">
-            <button class="checkin-minor" id="submit-button" type="submit">출석 체크</button>
-        </div>
-    </form>
-
+            <div id="form-alert" class="form-alert" role="status" aria-live="polite" hidden></div>
+        </form>
+    </div>
 </main>
-
-
 
 <script type="module" src="main.js"></script>
 </body>
