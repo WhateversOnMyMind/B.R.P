@@ -33,13 +33,11 @@
             <p class="page-sub">신청할 때 입력한 값을 <strong>동일하게</strong> 입력해 주세요.</p>
         </section>
 
-        <!-- 기존 Apps Script 엔드포인트/필드명 그대로 유지 -->
         <form
                 id="checkin"
                 class="card"
                 action="https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec"
                 method="POST"
-                target="_blank"
                 autocomplete="on"
         >
             <fieldset class="form-fields">
@@ -47,29 +45,15 @@
 
                 <div class="field">
                     <label for="name">이름 <span class="required" aria-hidden="true">*</span></label>
-                    <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            autocomplete="name"
-                            placeholder="홍길동"
-                            required
-                    />
+                    <input type="text" id="name" name="name" autocomplete="name" placeholder="홍길동" required />
                 </div>
 
                 <div class="field">
                     <label for="id">1368 ID</label>
-                    <input
-                            type="text"
-                            id="id"
-                            name="id"
-                            inputmode="numeric"
-                            placeholder="예: 12345678"
-                    />
+                    <input type="text" id="id" name="id" inputmode="numeric" placeholder="예: 12345678" />
                 </div>
 
                 <div class="field checkbox-field">
-                    <!-- 체크박스 미체크 시 FALSE를 전송하기 위한 hidden -->
                     <input type="hidden" name="blind" value="FALSE" />
                     <input type="checkbox" id="blind" name="blind" value="TRUE" />
                     <label for="blind">시각장애인 러너입니다</label>
@@ -77,14 +61,14 @@
 
                 <div class="field">
                     <label for="event">이벤트 코드 <span class="required" aria-hidden="true">*</span></label>
+                    <!-- TEXT (not number) to preserve leading zeros -->
                     <input
-                            type="number"
+                            type="text"
                             id="event"
                             name="event"
                             inputmode="numeric"
+                            pattern="\d+"
                             placeholder="예: 240903"
-                            min="0"
-                            step="1"
                             required
                     />
                 </div>
@@ -92,18 +76,16 @@
                 <div class="field">
                     <label for="record">10km 기록 (분)</label>
                     <input
-                            type="number"
+                            type="text"
                             id="record"
                             name="record"
                             inputmode="numeric"
+                            pattern="\d*"
                             placeholder="예: 55"
-                            min="0"
-                            step="1"
                     />
                 </div>
             </fieldset>
 
-            <!-- tall 버튼: 데스크톱에서 우측 세로로 꽉 차게 -->
             <div class="form-actions">
                 <input type="hidden" name="checkin" value="TRUE" />
                 <button id="submit-button" class="btn-primary" type="submit">출석 체크</button>
@@ -114,6 +96,18 @@
     </div>
 </main>
 
-<script type="module" src="main.js"></script>
+<script>
+    (function(){
+        const f = document.getElementById('checkin');
+        if (!f) return;
+        f.addEventListener('submit', function(){
+            ['name','id','event','record'].forEach(id=>{
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.value = String(el.value || '').trim().replace(/\s+/g,' ');
+            });
+        });
+    })();
+</script>
 </body>
 </html>
