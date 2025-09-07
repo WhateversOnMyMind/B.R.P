@@ -33,13 +33,7 @@
             <p class="page-sub">신청할 때 입력한 값을 <strong>동일하게</strong> 입력해 주세요.</p>
         </section>
 
-        <form
-                id="checkin"
-                class="card"
-                action="https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec"
-                method="POST"
-                autocomplete="on"
-        >
+        <form id="checkin" class="card" autocomplete="on">
             <fieldset class="form-fields">
                 <legend class="sr-only">출석 체크 정보 입력</legend>
 
@@ -61,28 +55,13 @@
 
                 <div class="field">
                     <label for="event">이벤트 코드 <span class="required" aria-hidden="true">*</span></label>
-                    <!-- TEXT (not number) to preserve leading zeros -->
-                    <input
-                            type="text"
-                            id="event"
-                            name="event"
-                            inputmode="numeric"
-                            pattern="\d+"
-                            placeholder="예: 240903"
-                            required
-                    />
+                    <!-- text, not number, to preserve leading zeros -->
+                    <input type="text" id="event" name="event" inputmode="numeric" pattern="\d+" placeholder="예: 240903" required />
                 </div>
 
                 <div class="field">
                     <label for="record">10km 기록 (분)</label>
-                    <input
-                            type="text"
-                            id="record"
-                            name="record"
-                            inputmode="numeric"
-                            pattern="\d*"
-                            placeholder="예: 55"
-                    />
+                    <input type="text" id="record" name="record" inputmode="numeric" pattern="\d*" placeholder="예: 55" />
                 </div>
             </fieldset>
 
@@ -97,15 +76,58 @@
 </main>
 
 <script>
-    (function(){
-        const f = document.getElementById('checkin');
-        if (!f) return;
-        f.addEventListener('submit', function(){
-            ['name','id','event','record'].forEach(id=>{
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.value = String(el.value || '').trim().replace(/\s+/g,' ');
+    (function () {
+        const form = document.getElementById('checkin');
+        if (!form) return;
+
+        const $ = (id) => document.getElementById(id);
+        const v = (id) => (($(id)?.value ?? '') + '').trim().replace(/\s+/g, ' ');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const name   = v('name');
+            const id     = v('id');
+            const blind  = $('#blind')?.checked ? 'TRUE' : 'FALSE';
+            const event  = v('event');   // string, preserves leading zeros
+            const record = v('record');
+
+            // hidden iframe + form
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.name = 'hidden-iframe';
+            document.body.appendChild(iframe);
+
+            const f = document.createElement('form');
+            f.method = 'POST';
+            f.action = 'https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec';
+            f.target = 'hidden-iframe';
+
+            [
+                ['name', name],
+                ['id', id],
+                ['blind', blind],
+                ['event', event],
+                ['record', record],
+                ['checkin', 'TRUE'], // check-in flag
+            ].forEach(([k, val]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = k;
+                input.value = val;
+                f.appendChild(input);
             });
+
+            document.body.appendChild(f);
+            f.submit();
+
+            setTimeout(() => {
+                document.body.removeChild(f);
+                document.body.removeChild(iframe);
+            }, 1500);
+
+            alert('체크인 요청을 전송했습니다.');
+            form.reset();
         });
     })();
 </script>
