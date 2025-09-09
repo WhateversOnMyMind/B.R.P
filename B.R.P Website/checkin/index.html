@@ -8,14 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Nanum+Gothic:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
-    <style>
-        /* tiny toast */
-        #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);
-            padding:10px 14px;border-radius:10px;background:#111827;color:#fff;font-size:14px;display:none}
-        #toast.show{display:block}
-    </style>
 </head>
 <body>
+<a class="skip-link" href="#main">본문 바로가기</a>
+
 <header class="site-header">
     <div class="container header-inner">
         <a class="brand" href="https://blindrunning.com" aria-label="Blind Running 홈으로">
@@ -52,19 +48,19 @@
                 </div>
 
                 <div class="field checkbox-field">
+                    <input type="hidden" name="blind" value="FALSE" />
                     <input type="checkbox" id="blind" name="blind" value="TRUE" />
                     <label for="blind">시각장애인 러너입니다</label>
                 </div>
 
                 <div class="field">
                     <label for="event">이벤트 코드 <span class="required" aria-hidden="true">*</span></label>
-                    <!-- keep as text so we control formatting -->
-                    <input type="text" id="event" name="event" inputmode="numeric" pattern="\d+" placeholder="예: 240903" required />
+                    <input type="text" id="event" name="event" inputmode="numeric" placeholder="예: 240903" required />
                 </div>
 
                 <div class="field">
                     <label for="record">10km 기록 (분)</label>
-                    <input type="text" id="record" name="record" inputmode="numeric" pattern="\d*" placeholder="예: 55" />
+                    <input type="text" id="record" name="record" inputmode="numeric" placeholder="예: 55" />
                 </div>
             </fieldset>
 
@@ -77,112 +73,6 @@
     </div>
 </main>
 
-<div id="toast"></div>
-
-<script>
-    (function () {
-        const form = document.getElementById('checkin');
-        const TO = 1200; // ms between attempts
-        const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyGICmPIv5MoAG_g00EYbAM05sFYT9bZjBoAadXZyUFtRIloLAPKQfAzX1lkgUMqN1e5Q/exec';
-
-        const toast = (msg) => {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        };
-
-        const getVal = (id) => {
-            const el = document.getElementById(id);
-            return (el && el.value != null) ? String(el.value) : '';
-        };
-
-        function postHidden(payload) {
-            // hidden iframe
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.name = 'hidden-iframe-' + Math.random().toString(36).slice(2);
-            document.body.appendChild(iframe);
-
-            // hidden form
-            const f = document.createElement('form');
-            f.method = 'POST';
-            f.action = EXEC_URL;
-            f.target = iframe.name;
-
-            Object.entries(payload).forEach(([k, val]) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = k;
-                input.value = val;
-                f.appendChild(input);
-            });
-
-            document.body.appendChild(f);
-            f.submit();
-
-            setTimeout(() => {
-                document.body.removeChild(f);
-                document.body.removeChild(iframe);
-            }, 1500);
-        }
-
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            // RAW as typed (no trimming/collapsing) to match strict sheet equality
-            const nameRaw   = getVal('name');
-            const idRaw     = getVal('id');
-            const blindRaw  = document.getElementById('blind')?.checked ? 'TRUE' : 'FALSE';
-            const eventRaw  = getVal('event');
-            const recordRaw = getVal('record');
-
-            // A) raw
-            postHidden({
-                name: nameRaw,
-                id: idRaw,
-                blind: blindRaw,
-                event: eventRaw,
-                record: recordRaw,
-                checkin: 'TRUE'
-            });
-            toast('체크인 전송 A (원본 값)');
-
-            // B) event without leading zeros (if sheet stored it as number)
-            setTimeout(() => {
-                const eventNoZeros = eventRaw.replace(/^0+(?=\d)/, '');
-                if (eventNoZeros !== eventRaw) {
-                    postHidden({
-                        name: nameRaw,
-                        id: idRaw,
-                        blind: blindRaw,
-                        event: eventNoZeros,
-                        record: recordRaw,
-                        checkin: 'TRUE'
-                    });
-                    toast('체크인 전송 B (이벤트 코드 선행 0 제거)');
-                }
-            }, TO);
-
-            // C) also try record as empty (if signup saved blank)
-            setTimeout(() => {
-                const eventNoZeros = eventRaw.replace(/^0+(?=\d)/, '');
-                postHidden({
-                    name: nameRaw,
-                    id: idRaw,
-                    blind: blindRaw,
-                    event: eventNoZeros,
-                    record: '',
-                    checkin: 'TRUE'
-                });
-                toast('체크인 전송 C (이벤트 0제거 + 기록 공란)');
-            }, TO * 2);
-
-            // UI
-            alert('체크인 요청을 전송했습니다. (A/B/C 시도)');
-            form.reset();
-        });
-    })();
-</script>
+<script src="checkin.js"></script>
 </body>
 </html>
