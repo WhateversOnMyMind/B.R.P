@@ -1,0 +1,14 @@
+{
+  "name": "blindbalance-control-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22.14.0"},
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev --local",
+    "check": "wrangler deploy --dry-run --outdir build",
+    "deploy": "wrangler deploy --config wrangler.production.jsonc"
+  },
+  "devDependencies": {"wrangler": "4.152.0"}
+}
