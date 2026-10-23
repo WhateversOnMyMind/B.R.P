@@ -10,6 +10,8 @@ The checked-in `control/config.mjs` has an empty `API_BASE_URL`. This is intenti
 
 This variable is public, not a secret. Never put operator keys, device keys, Cloudflare credentials, or R2 credentials in the frontend, a build URL, or `meta.env`. Provision individual pair-scoped operator keys through the backend tooling. The browser keeps the operator key in memory; refresh/close/sign-out clears it. Configure exact preview/production origins in the Worker CORS allowlist before testing authenticated access.
 
+The Netlify configurations now set the deployed public endpoint `https://blindbalance-control.debutgacc.workers.dev`. Local manual builds still require `CONTROL_API_BASE_URL`; the source `config.mjs` intentionally stays unconfigured.
+
 ## Netlify setup and rollout
 
 The inspected September 9, 2025 production build log prepared Git reference `refs/heads/main` at `70ed3dd`, used `B.R.P Website` as both the custom build path and publish path, and had no build steps (with an `/bin/false` ignore command). A separate page summary also mentioned Netlify Drop. The log establishes that deployment's Git source, but neither view confirms current auto-deploy settings. Verify the actual project/repository/branch and effective build settings before publishing; the old raw-source publish path must change to generated `dist`.

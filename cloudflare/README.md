@@ -91,6 +91,14 @@ npm run deploy
 
 `deploy` deliberately requires the separate production configuration file. Use the actual HTTPS URL reported by Wrangler for the frontend public API base and the firmware API base. Verify it with authenticated synthetic devices before physical firmware cutover. Do not infer successful deployment from `check` or local tests.
 
+For deployed verification, provision a separate pair whose ID starts with `deployment-smoke-`, import its generated SQL, and run:
+
+```powershell
+node tools/smoke.mjs https://YOUR-WORKER.workers.dev provisioning/ACTUAL_TEST_FOLDER/secrets.json
+```
+
+This creates simulated device status, commands, and a tiny CSV only in that dedicated test pair. It checks authentication, role scope, exact CORS behavior, paired settings (including float32 sensitivity 0.3), private upload/download checksums, and reboot invalidation. It writes a nonsecret `smoke-report.json` beside the credentials. Never use a physical pair's credentials. After browser QA, revoke the test pair's credentials; retain or remove its synthetic records according to the deployment cleanup policy.
+
 ## Contract and lifecycle details
 
 All routes require a Bearer key except CORS preflights. Authorization comes from the token's stored pair and device association; body fields never select identity. Device keys cannot read operator endpoints and operator keys cannot impersonate devices. Responses use `Cache-Control: no-store`. Only explicitly configured origins receive CORS headers; requests without Origin (firmware/CLI) still require authentication.
