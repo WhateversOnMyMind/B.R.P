@@ -1,5 +1,20 @@
 [build]
-  ignore = "/bin/false"
+  # Compatibility only when Netlify's base is explicitly B.R.P Website.
+  # Prefer the repository-root netlify.toml with base '.' and publish 'dist'.
+  command = "node ../tools/build.mjs"
+  publish = "../dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  CONTROL_API_BASE_URL = "https://blindbalance-control.debutgacc.workers.dev"
 
 [build.processing]
   skip_processing = false
+
+[[headers]]
+  for = "/control/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"

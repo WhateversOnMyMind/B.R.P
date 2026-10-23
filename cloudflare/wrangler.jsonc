@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blindbalance-control",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-23",
+  "account_id": "f16ca94f69f2c080a6fe116173ab733d",
+  "workers_dev": true,
+  "vars": {"ALLOWED_ORIGINS": "https://blindrunning.com,https://www.blindrunning.com"},
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "blindbalance-control",
+    // No remote database exists yet. Add its actual database_id to the private
+    // wrangler.production.jsonc copy after account-side creation is authorized.
+    "migrations_dir": "migrations"
+  }],
+  "r2_buckets": [{"binding": "CAPTURES", "bucket_name": "blindbalance-captures"}],
+  "observability": {"enabled": false}
+}
