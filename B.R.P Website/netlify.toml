@@ -1,4 +1,6 @@
 [build]
+  # Always build: Netlify's automatic change check has skipped site updates.
+  ignore = "exit 1"
   # Compatibility only when Netlify's base is explicitly B.R.P Website.
   # Prefer the repository-root netlify.toml with base '.' and publish 'dist'.
   command = "node ../tools/build.mjs"

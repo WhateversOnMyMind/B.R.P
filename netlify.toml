@@ -1,4 +1,6 @@
 [build]
+  # Always build: Netlify's automatic change check has skipped site updates.
+  ignore = "exit 1"
   base = "."
   command = "node tools/build.mjs"
   publish = "dist"
