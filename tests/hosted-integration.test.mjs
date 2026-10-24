@@ -35,6 +35,29 @@ test('operator command waits for left execution and right ESP-NOW revision confi
   assert.equal(stale.canCommandPair, false);
 });
 
+test('motor feedback commands round-trip through Cloudflare and wait for both arms', async () => {
+  const h = await createHarness();
+  const status = {actuator:'motor', commandedPwm:128};
+  await h.exchange('L', status); await h.exchange('R', status);
+  let view = deriveState(await h.state(), {authenticated:true});
+  assert.equal(view.pairActuator, 'motor');
+  const response = await h.request('/v1/operator/commands', {method:'POST',
+    body:commandPayload(view, 'set_motor_enabled', 'pair', false)});
+  assert.equal(response.status, 201);
+  const accepted = await response.json();
+  const delivery = await (await h.exchange('L', status)).json();
+  assert.equal(delivery.commands[0].id, accepted.id);
+  const stopped = {...status, motorEnabled:false, commandedPwm:0, settingsRevision:accepted.revision};
+  await h.exchange('L', stopped, {ack:{id:accepted.id, revision:accepted.revision, result:'applied'}});
+  view = deriveState(await h.state(), {authenticated:true});
+  assert.equal(view.commands[0].outcome.state, 'partial');
+  assert.equal(view.arms.L.output, 0);
+  await h.exchange('R', stopped);
+  view = deriveState(await h.state(), {authenticated:true});
+  assert.equal(view.commands[0].outcome.state, 'applied');
+  assert.equal(view.canCommandPair, true);
+});
+
 test('private finalized capture is downloadable without returning board addresses', async () => {
   const h = await createHarness();
   await h.online();

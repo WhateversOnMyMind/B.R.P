@@ -30,18 +30,23 @@ export function deriveState(snapshot, { elapsedMs = 0, authenticated = false, su
     const ageMs = valid && number(device?.lastSeenMs) && device.lastSeenMs <= snapshot.serverTimeMs
       ? serverNowMs - device.lastSeenMs : null;
     const fresh = ageMs !== null && ageMs >= 0 && ageMs < STALE_MS;
-    const compatible = status.actuator === 'piezo';
+    const actuator = ['piezo', 'motor'].includes(status.actuator) ? status.actuator : null;
+    const compatible = actuator !== null;
+    const commandedPwm = actuator === 'motor' && Number.isInteger(status.commandedPwm) &&
+      status.commandedPwm >= 0 && status.commandedPwm <= 255 ? status.commandedPwm : null;
     const downloadableCapture = (snapshot?.captures || []).find(capture =>
       capture.deviceId === device?.id && capture.captureId === status.captureId) || null;
-    return [arm, { device, status, ageMs, fresh, compatible, canCommand: unlocked && fresh && compatible,
+    return [arm, { device, status, ageMs, fresh, actuator, compatible, commandedPwm, canCommand: unlocked && fresh && compatible,
       motorEnabled: typeof status.motorEnabled === 'boolean' ? status.motorEnabled : null,
-      output: compatible && number(status.feedbackIntensity) && status.feedbackIntensity >= 0 && status.feedbackIntensity <= 1 ? status.feedbackIntensity : null,
-      toneActive: compatible && typeof status.toneActive === 'boolean' ? status.toneActive : null,
-      pulsePeriodMs: compatible && number(status.pulsePeriodMs) && status.pulsePeriodMs >= 0 ? status.pulsePeriodMs : null,
+      output: actuator === 'motor' ? (commandedPwm === null ? null : commandedPwm / 255) :
+        actuator === 'piezo' && number(status.feedbackIntensity) && status.feedbackIntensity >= 0 && status.feedbackIntensity <= 1 ? status.feedbackIntensity : null,
+      toneActive: actuator === 'piezo' && typeof status.toneActive === 'boolean' ? status.toneActive : null,
+      pulsePeriodMs: actuator === 'piezo' && number(status.pulsePeriodMs) && status.pulsePeriodMs >= 0 ? status.pulsePeriodMs : null,
       downloadableCapture }];
   }));
-  return { revision: snapshot?.revision, pairId: snapshot?.pairId, serverNowMs, busy, arms,
-    canCommandPair: arms.L.canCommand && arms.R.canCommand,
+  const pairActuator = arms.L.actuator && arms.L.actuator === arms.R.actuator ? arms.L.actuator : null;
+  return { revision: snapshot?.revision, pairId: snapshot?.pairId, serverNowMs, busy, arms, pairActuator,
+    canCommandPair: arms.L.canCommand && arms.R.canCommand && pairActuator !== null,
     commands: commands.map(command => ({ ...command, outcome: commandOutcome(command, serverNowMs) })) };
 }
 
@@ -64,9 +69,9 @@ export function captureProblem(status) {
 export function commandPayload(state, action, target, value) {
   const payload = { expectedRevision: state.revision, action, target };
   if (action === 'set_motor_enabled' || action === 'set_sensitivity') {
-    if (target !== 'pair' || !state.canCommandPair) throw new Error('Both arms must be fresh and no command can be pending.');
+    if (target !== 'pair' || !state.canCommandPair) throw new Error('Both arms must be fresh with matching hardware and no command can be pending.');
     if (action === 'set_motor_enabled') {
-      if (typeof value !== 'boolean') throw new Error('Piezo enable must be true or false.');
+      if (typeof value !== 'boolean') throw new Error('Feedback enable must be true or false.');
       payload.value = value;
     } else payload.value = parseSensitivity(value);
     return payload;

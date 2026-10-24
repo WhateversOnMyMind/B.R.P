@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <string.h>
 #if __has_include("CloudConfig.h")
 #include "CloudConfig.h"
 #endif
@@ -34,5 +35,11 @@ inline bool pairingConfigured() {
  for (auto b:pmk) p|=b;
  for (auto b:lmk) l|=b;
  return CLOUD_PAIR_ID!=0 && m && !(peerMac[0]&1) && p && l;
+}
+inline bool configured() {
+ // Cloud status/calibration are useful before the second board is assembled.
+ // ESP-NOW and feedback still require pairingConfigured() and a fresh peer.
+ return !strncmp(CLOUD_API_BASE,"https://",8)&&strlen(CLOUD_API_BASE)>8&&
+  strlen(CLOUD_DEVICE_KEY)>=32&&strstr(CLOUD_ROOT_CA,"-----BEGIN CERTIFICATE-----");
 }
 }

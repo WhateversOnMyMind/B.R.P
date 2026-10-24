@@ -1,36 +1,56 @@
-# Ten-second measurement windows
+# Ten-second measurement windows through Cloudflare
 
-The measurement loop closes a window every 10 seconds from the end of startup calibration. It copies that window's count and distance into a queue and immediately starts the next window. A separate FreeRTOS task performs Google Sheets HTTP requests. Request duration no longer extends the measurement period or blocks IMU updates.
+The measurement loop closes a window every 10 seconds from the end of startup
+calibration, preserving its count, distance and commanded piezo activity before
+resetting the counters. This is independent of the five-second balance comparison.
+The existing background Cloudflare task sends the latest snapshot with its normal
+authenticated `/v1/device/exchange` request. There is no Google Sheets uploader,
+Apps Script receiver, separate telemetry HTTP task or spreadsheet configuration.
 
-The Sheets payload is `{arm, count, distance, alerted}` with distance in centimetres and a boolean indicating commanded alert output during the window. See `apps-script/README.md` for the updated receiver and deployment. Toggle events retain `{event, state, ts}` and capture `ts` at the time of the action. The server and spreadsheet can still receive/display rows at irregular times. Receiver timestamps are not acquisition timestamps.
+## Latest status
 
-## Diagnostics
+The operator state API returns each board's latest accepted status, including:
 
-Serial output includes:
+- `windowReady`: false until the first measurement window closes.
+- `windowSequence`: completed-window sequence within the current boot.
+- `windowCount` and `windowDistanceCm`: swings and distance in centimetres.
+- `windowAlerted`: whether piezo output was commanded during that window. This is
+  not a physical sound measurement; use the device arm to identify the alerting arm.
+- `windowStartMs`, `windowEndMs`, `windowLateMs`, `windowMissedDeadlines`: actual
+  acquisition boundaries and timing diagnostics, in board uptime milliseconds.
+- `maxSampleGapUs` and `sampleGapCount`: sampling-gap diagnostics.
 
-- `[window]`: boot/session ID, job sequence, actual window start/end, deadline lateness, missed deadlines, queue result/depth, drop count, maximum sampling gap and invalid-gap count.
-- `[upload]`: the corresponding job ID, action/capture time, HTTP start/end/duration and result code.
+These are latest-status values, not a history table. A newer window replaces the
+previous one. Offline periods, slow requests or capture uploads can cause intermediate
+windows never to reach the server. The existing API stores these optional fields
+without a deployment or database migration. Device receipt time is separate from
+the acquisition window timestamps. Saved raw captures remain downloadable through
+Cloudflare R2; they require the LittleFS setup described in `CLOUD_CONTROL.md`.
 
-`GET /state` also exposes `telemetryReady`, `uploadBusy`, `uploadQueued`, `uploadDropped`, `uploadFailed`, `uploadUnconfirmed`, `uploadSucceeded`, `lastUploadMs`, `lastHttpCode`, `windowStartMs`, `windowEndMs`, `windowLateMs`, `windowMissedDeadlines`, `maxSampleGapUs` and `sampleGapCount`.
+Feedback-setting changes are tracked by Cloudflare command acknowledgments.
+The old Sheets event queue and its upload counters are no longer used.
 
-HTTP 2xx means the transport returned success, not that the spreadsheet row was independently verified. HTTP 3xx is counted as unconfirmed because Apps Script may write a row before redirecting the response. Negative codes or other HTTP errors count as failures; `-1000` means offline or HTTP initialization failed.
+## Timing and diagnostics
 
-## Failure policy
+Serial `[window]` lines show boot ID, sequence, start/end, lateness, missed deadlines,
+count, distance, commanded alert state and sample-gap metrics. The old `[upload]`
+lines and their `code=-1000` no longer exist. A window line confirms measurement
+only; check the website's Fresh status to confirm Cloudflare connectivity.
 
-- Twelve jobs can wait, plus one in-flight request. Window and toggle records share this queue.
-- A full or unavailable queue drops the new record and increments `uploadDropped`. Sensing never waits for queue space.
-- An offline or failed upload is reported and discarded. There are no automatic retries, preventing duplicate rows when a server wrote data but its response was lost. This is bounded best-effort delivery, not durable storage.
-- Connect and response timeouts are each 5 seconds; these are phase limits, not a guaranteed total request duration.
-- Allocation failure leaves sensing enabled and reports `telemetryReady:false`.
-- If some other operation stalls the measurement loop, one extended window records the real duration and the next deadline remains aligned. Missing time is never fabricated into multiple rows.
-- Sample intervals above 100 ms cancel an unfinished swing and skip integration for that reading, preventing a large false arc from missing samples. `micros()` subtraction handles 32-bit rollover.
+Sensing never waits for network requests. If the loop stalls, one extended window
+records the actual duration; it does not fabricate catch-up records. Sample gaps
+above 100 ms cancel an unfinished swing and skip that integration step. Unsigned
+uptime subtraction handles timer rollover. Filesystem and radio activity can still
+affect hardware timing; this is not a hard real-time guarantee.
 
-Raw flash logging, raw-log downloads and manual recalibration can still delay the main loop. This change removes HTTP uploads from that loop; it does not make sampling hard real-time. Validate the 100 ms gap guard and measured jitter on the assembled boards before research trials.
+## Verification
 
-## Verification and flashing
+Run `tests/run-tests.ps1` for measurement timing, alert windows, piezo scheduling,
+command guards, peer validation, capture timing and cloud-configuration checks.
+Run the website and Cloudflare test suites from their respective package folders.
+Compile the complete sketch for ESP32-S3 with its matching arm and private config.
+Verification scripts compile only; they never upload firmware.
 
-Run `tests/run-tests.ps1` for native C++ timing tests and the production worker against fake ESP32/HTTP boundaries. The fakes exercise payloads, failures and queue behavior without contacting the live Sheet; they do not emulate real FreeRTOS scheduling, TLS, radio traffic or hardware.
-
-Compile the complete sketch directory for ESP32-S3. Keep `Telemetry.cpp`, `Telemetry.h`, `TelemetryTiming.h`, `AlertWindow.h`, `RawLog.ino`, and `WebUI.ino` alongside `Jul27.ino`. Select the arm using the existing `ARM_IS_LEFT` toggle. Nothing in the verification scripts uploads firmware. `TELEMETRY_BUILD_RESULTS.json` records the earlier cadence-only revision; `ALERT_BUILD_RESULTS.json` records the subsequent alert-logging revision.
-
-After flashing, capture at least five minutes of `[window]` and `[upload]` logs on both boards. Expect nominal 10,000 ms boundaries with small loop jitter, even when request durations vary. Check maximum sample gaps, peer feedback, toggles, queue/error counters, and piezo behavior on the newer revision. Actual hardware timing and backend row persistence require that bench check.
+After flashing, check several minutes of `[window]` logs, nominal 10,000 ms
+boundaries and sample-gap counters. Verify the board appears Fresh on the hosted
+page and that recalibration is acknowledged. Balance feedback requires both arms.

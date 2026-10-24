@@ -1,8 +1,10 @@
 # Hosted piezo control firmware
 
 This hosted-control firmware connects outward to the Cloudflare `/v1` API. It does not
-start WebServer, expose raw-log routes, or register mDNS. `demo`, the historical
-dashboard, and the existing 10-second Sheets transport remain separate.
+start WebServer, expose raw-log routes, or register mDNS. Control, latest status
+and saved raw captures use Cloudflare; the legacy Sheets uploader and Apps Script
+receiver have been removed from this hosted firmware. `demo` and the historical
+dashboard remain separate.
 
 ## Source location after the 2026-10-24 move
 
@@ -35,6 +37,9 @@ hashes describe the earlier restoration, not those subsequent edits.
    anchor for that hostname. Empty/partial configuration leaves cloud control
    disabled. TLS hostname and certificate validation are mandatory; there is no
    insecure fallback or automatic redirect following. Working NTP is required.
+   Cloud status and per-arm commands can run before a peer is configured. For
+   one-board setup, leave the unknown peer MAC as zeroes; do not invent a MAC.
+   Peer feedback stays unavailable, and pair commands still require both boards.
 3. Provision the same nonzero uint32 pair ID and random 16-byte PMK/LMK on both
    boards; each board stores the **other** board's Wi-Fi station MAC. These are
    application pairing settings, independent of the backend's textual pair ID.
@@ -62,8 +67,8 @@ Acknowledgments survive network failures until accepted; a definitive HTTP 409
 rejection is discarded so it cannot permanently block fresh status.
 
 Shared settings execute only on the left. Absolute `set_motor_enabled` values
-replace toggles, and changed feedback settings retain the existing Sheets event
-format. Disable immediately stops the piezo tone. The left sends the command's
+replace toggles; Cloudflare command history records their acknowledgments.
+Disable immediately stops the piezo tone. The left sends the command's
 `settingsRevision` over the authenticated peer link; the right adopts settings
 without decrementing its revision. The server confirms both actual applications.
 After a left reboot, a still-running right retains its previous revision/settings
@@ -77,7 +82,7 @@ uses a six-second cutoff (the feedback window plus one second) and stops output
 on the next sensing iteration.
 
 Calibration settles for 400 ms, then accumulates the normal samples for two
-seconds. Sensing, raw recording, status, peer traffic and Sheets window closure
+seconds. Sensing, raw recording, status, peer traffic and measurement window closure
 continue. Haptic output is suppressed during calibration. Its acknowledgment is
 sent only after the new bias is applied. Commands with insufficient remaining
 lifetime are rejected before starting calibration.
@@ -107,7 +112,7 @@ last rows; the recovered byte count and hash describe the retained file.
 
 ## Verification and rollout
 
-Run `tests/run-tests.ps1` and `node --test tests/apps_script_test.mjs`. Native tests
+Run `tests/run-tests.ps1`. Native tests
 cover duplicates, wrong/restarted boot, stale revisions, deadline rollover,
 finite/ranged sensitivity, left authority, capture generation checks, paired
 identity and peer replay. The installed ESP32 core supplies cJSON and mbedTLS;
@@ -132,10 +137,10 @@ Before a production flash/cutover, bench-check both boards on the intended AP:
 - Duplicate/reordered/expired commands, a reboot during a pending command, peer
   loss, and shared commands with only one board reachable; no false pair success.
 - Immediate disable, sensitivity synchronization and nonblocking calibration;
-  inspect sample-gap counters during TLS, Sheets uploads and filesystem writes.
+  inspect sample-gap counters during Cloudflare TLS requests and filesystem writes.
 - A full three-minute capture, queue overflow diagnostics, stop/upload/clear
   races, power loss during capture, wrong hash, and lost upload responses.
-- Physical piezo behavior and 10-second Sheets/alert windows on real hardware.
+- Physical piezo behavior and 10-second measurement/alert windows on real hardware.
 
 Flash latency can still briefly stall ESP32 instruction fetch even with separate
 tasks; sample-gap counters and physical timing measurements are the rollout gate.

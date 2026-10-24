@@ -28,6 +28,11 @@ foreach ($arm in $Arms) {
   $stage = Join-Path $buildRoot 'cloud-source-right/Jul27'
   $buildPath = Join-Path $buildRoot 'cloud-build-right'
   New-Item -ItemType Directory -Force -Path $stage | Out-Null
+  # Retire the Sheets uploader from reused staging directories as well.
+  foreach ($name in @('Telemetry.cpp','Telemetry.h')) {
+    $retiredSource = Join-Path $stage $name
+    if (Test-Path -LiteralPath $retiredSource) { Remove-Item -LiteralPath $retiredSource }
+  }
   # Never retain an old provisioned header if it was removed from the source.
   if (!(Test-Path -LiteralPath (Join-Path $firmware 'CloudConfig.h'))) {
     $staleConfig = Join-Path $stage 'CloudConfig.h'

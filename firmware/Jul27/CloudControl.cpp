@@ -95,15 +95,11 @@ void addStatus(cJSON* o,const Snapshot& s) {
  cJSON_AddBoolToObject(o,"captureRecoveryRequired",s.capture.recoveryRequired);
  cJSON_AddBoolToObject(o,"captureReady",s.capture.ready);
  cJSON_AddNumberToObject(o,"captureDropped",s.capture.dropped);
- cJSON_AddBoolToObject(o,"telemetryReady",s.telemetry.ready);
- cJSON_AddBoolToObject(o,"uploadBusy",s.telemetry.busy);
- cJSON_AddNumberToObject(o,"uploadQueued",s.telemetry.queued);
- cJSON_AddNumberToObject(o,"uploadDropped",s.telemetry.dropped);
- cJSON_AddNumberToObject(o,"uploadFailed",s.telemetry.failed);
- cJSON_AddNumberToObject(o,"uploadUnconfirmed",s.telemetry.unconfirmed);
- cJSON_AddNumberToObject(o,"uploadSucceeded",s.telemetry.succeeded);
- cJSON_AddNumberToObject(o,"lastUploadMs",s.telemetry.lastDurationMs);
- cJSON_AddNumberToObject(o,"lastHttpCode",s.telemetry.lastHttpCode);
+ cJSON_AddBoolToObject(o,"windowReady",s.windowSequence!=0);
+ cJSON_AddNumberToObject(o,"windowSequence",s.windowSequence);
+ cJSON_AddNumberToObject(o,"windowCount",s.window.count);
+ cJSON_AddNumberToObject(o,"windowDistanceCm",s.window.distanceCm);
+ cJSON_AddBoolToObject(o,"windowAlerted",s.windowAlerted);
  cJSON_AddNumberToObject(o,"windowStartMs",s.window.startMs);
  cJSON_AddNumberToObject(o,"windowEndMs",s.window.endMs);
  cJSON_AddNumberToObject(o,"windowLateMs",s.window.lateMs);
@@ -191,10 +187,6 @@ void task(void*) {
   vTaskDelay(pdMS_TO_TICKS(backoff));
  }
 }
-}
-bool configured() {
- return !strncmp(CLOUD_API_BASE,"https://",8)&&strlen(CLOUD_API_BASE)>8&&
-  strlen(CLOUD_DEVICE_KEY)>=32&&strstr(CLOUD_ROOT_CA,"-----BEGIN CERTIFICATE-----")&&pairingConfigured();
 }
 bool begin() {
  if(!configured()) return false;

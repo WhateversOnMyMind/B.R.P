@@ -105,8 +105,8 @@ test('piezo feedback uses cadence intensity and never treats legacy motor PWM as
   assert.equal(view.canCommandPair, true);
 });
 
-test('motor and unidentified firmware cannot receive piezo controls', () => {
-  for (const actuator of ['motor', undefined]) {
+test('unidentified firmware cannot receive feedback controls', () => {
+  for (const actuator of ['unknown', undefined]) {
     const other = device('R', { status: { ...device('R').status, actuator, commandedPwm: 128 } });
     const view = deriveState(snapshot({ devices: [device('L'), other] }), { authenticated: true });
     assert.equal(view.arms.R.compatible, false);
@@ -114,6 +114,39 @@ test('motor and unidentified firmware cannot receive piezo controls', () => {
     assert.equal(view.arms.R.canCommand, false);
     assert.equal(view.canCommandPair, false);
     assert.throws(() => commandPayload(view, 'set_motor_enabled', 'pair', true));
+  }
+});
+
+test('motor pairs use commanded PWM without interpreting piezo tone fields', () => {
+  const devices = ['L', 'R'].map(arm => device(arm, {status: {...device(arm).status,
+    actuator: 'motor', commandedPwm: 128, feedbackIntensity: 1, toneActive: true, pulsePeriodMs: 200}}));
+  const view = deriveState(snapshot({devices}), {authenticated:true});
+  assert.equal(view.canCommandPair, true);
+  assert.equal(view.pairActuator, 'motor');
+  assert.equal(view.arms.L.output, 128 / 255);
+  assert.equal(view.arms.L.commandedPwm, 128);
+  assert.equal(view.arms.L.toneActive, null);
+  assert.equal(view.arms.L.pulsePeriodMs, null);
+  assert.equal(commandPayload(view, 'set_motor_enabled', 'pair', false).value, false);
+  assert.equal(commandPayload(view, 'recalibrate', 'R').target, 'R');
+});
+
+test('mixed actuator pairs allow per-arm maintenance but block shared feedback settings', () => {
+  const motor = device('R', {status: {...device('R').status, actuator:'motor', commandedPwm:0}});
+  const view = deriveState(snapshot({devices:[device('L'), motor]}), {authenticated:true});
+  assert.equal(view.canCommandPair, false);
+  assert.equal(view.pairActuator, null);
+  assert.equal(view.arms.R.canCommand, true);
+  assert.throws(() => commandPayload(view, 'set_motor_enabled', 'pair', true));
+  assert.equal(commandPayload(view, 'recalibrate', 'R').target, 'R');
+});
+
+test('invalid motor PWM is never displayed as a measured output', () => {
+  for (const commandedPwm of [undefined, -1, 256, 1.5, '128', NaN]) {
+    const motor = device('L', {status: {...device('L').status, actuator:'motor', commandedPwm}});
+    const view = deriveState(snapshot({devices:[motor]}), {authenticated:true});
+    assert.equal(view.arms.L.output, null);
+    assert.equal(view.arms.L.commandedPwm, null);
   }
 });
 

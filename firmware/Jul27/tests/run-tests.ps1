@@ -3,8 +3,18 @@ $ErrorActionPreference = 'Stop'
 $env:PATH = (Split-Path $Compiler) + ';' + $env:PATH
 Push-Location $PSScriptRoot
 try {
-  foreach ($suite in @('telemetry_timing_test','telemetry_worker_test','alert_window_test','cloud_command_test','peer_protocol_test','capture_timing_test','piezo_feedback_test')) {
-    & $Compiler -std=c++17 -Wall -Wextra -Werror -I fakes "$suite.cpp" -o "$suite.exe"
+  $configTests = Join-Path (Split-Path $PSScriptRoot) '.build/cloud-settings-tests'
+  New-Item -ItemType Directory -Force -Path $configTests | Out-Null
+  Copy-Item -LiteralPath (Join-Path (Split-Path $PSScriptRoot) 'CloudSettings.h') -Destination (Join-Path $configTests 'CloudSettings.h')
+  foreach ($case in 0..5) {
+    $exe = Join-Path $configTests "case-$case.exe"
+    & $Compiler -std=c++17 -Wall -Wextra -Werror "-DTEST_CONFIG_CASE=$case" -I $configTests 'cloud_settings_test.cpp' -o $exe
+    if ($LASTEXITCODE -ne 0) { throw "Cloud settings compile failed: $case" }
+    & $exe
+    if ($LASTEXITCODE -ne 0) { throw "Cloud settings test failed: $case" }
+  }
+  foreach ($suite in @('telemetry_timing_test','alert_window_test','cloud_command_test','peer_protocol_test','capture_timing_test','piezo_feedback_test')) {
+    & $Compiler -std=c++17 -Wall -Wextra -Werror "$suite.cpp" -o "$suite.exe"
     if ($LASTEXITCODE -ne 0) { throw "Compile failed: $suite" }
   }
   & .\telemetry_timing_test.exe
@@ -19,8 +29,4 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Capture timing tests failed' }
   & .\piezo_feedback_test.exe
   if ($LASTEXITCODE -ne 0) { throw 'Piezo feedback tests failed' }
-  foreach ($case in @('queue-failure','task-failure','overflow','slow','toggle','offline','redirect','http-error','timeout','begin-failure')) {
-    & .\telemetry_worker_test.exe $case
-    if ($LASTEXITCODE -ne 0) { throw "Worker test failed: $case" }
-  }
 } finally { Pop-Location }

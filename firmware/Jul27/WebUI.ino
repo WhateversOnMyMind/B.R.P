@@ -1,13 +1,5 @@
 // Cloud action adapter. No local HTTP server or mDNS is started in production.
 // The sensing loop is the sole owner of settings, calibration and output.
-static void postToggleEvent(bool state) {
-  telemetry::Job job={}; job.kind=telemetry::Kind::Toggle;
-  job.arm=ARM_CHAR; job.enabled=state; job.bootId=g_telemetryBoot;
-  job.sequence=++g_telemetrySequence; job.capturedMs=millis();
-  job.epochSeconds=static_cast<uint32_t>(time(nullptr));
-  if(!telemetry::enqueue(job)) Serial.println(F("Toggle event dropped: upload queue unavailable/full"));
-}
-
 void cloudActionsTick() {
   capture::Result result;
   if(capture::result(result)) {
@@ -18,7 +10,7 @@ void cloudActionsTick() {
   cloud::Command command;
   if(!cloud::receive(command)) return;
   const auto captureState=capture::status();
-  auto decision=g_commandGuard.check(command,ARM_CHAR,g_telemetryBoot,millis(),captureState.id);
+  auto decision=g_commandGuard.check(command,ARM_CHAR,g_bootId,millis(),captureState.id);
   if(decision==cloud::Decision::Duplicate) {
     cloud::acknowledge(command,g_commandGuard.applied,"previous result"); return;
   }
@@ -28,7 +20,6 @@ void cloudActionsTick() {
   bool applied=true;
   switch(command.action) {
     case cloud::Action::Motor:
-      if(g_motorEnabled!=command.boolValue) postToggleEvent(command.boolValue);
       g_motorEnabled=command.boolValue; g_settingsRevision=command.revision;
       if(!g_motorEnabled) setFeedbackIntensity(0.0f);
       break;
@@ -51,7 +42,7 @@ void cloudPublish() {
   static uint32_t last=0;
   if(uint32_t(millis()-last)<100) return;
   last=millis(); cloud::Snapshot s;
-  s.arm=ARM_CHAR; s.boot=g_telemetryBoot; s.settingsRevision=g_settingsRevision;
+  s.arm=ARM_CHAR; s.boot=g_bootId; s.settingsRevision=g_settingsRevision;
   s.motorEnabled=g_motorEnabled; s.feedbackDeadZone=g_feedbackDeadZone;
   s.peerFresh=peerIsFresh(); s.recalibrating=g_recalibrating;
   s.feedbackEligible=s.peerFresh&&g_motorEnabled&&!g_recalibrating;
@@ -61,6 +52,7 @@ void cloudPublish() {
   s.pulsePeriodMs=envelope.periodMs;
   s.magnetometerReady=g_magnetometerReady;
   s.maxSampleGapUs=g_maxSampleGapUs; s.sampleGapCount=g_sampleGapCount;
-  s.window=g_lastWindow; s.telemetry=telemetry::status(); s.capture=capture::status();
+  s.window=g_lastWindow; s.windowSequence=g_windowSequence;
+  s.windowAlerted=g_lastWindowAlerted; s.capture=capture::status();
   cloud::publish(s);
 }

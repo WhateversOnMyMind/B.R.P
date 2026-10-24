@@ -5,8 +5,8 @@
  * Two independent boards. Flash this SAME sketch to BOTH; change only the
  * ARM toggle below. Each board:
  *   - tracks its own arm's swings,
- *   - posts its own {arm, count, distance} to Google Sheets every 10 s,
- *   - broadcasts its recent swing window to the other board over ESP-NOW,
+ *   - reports its latest 10-second measurement window through Cloudflare,
+ *   - sends its recent swing window to its encrypted ESP-NOW peer,
  *   - compares the two arms and beeps ITS OWN piezo when its arm lags.
  *
  * Pins from Composite Board rev C:
@@ -30,10 +30,9 @@
 #include <math.h>
 #include <time.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
 #include <esp_now.h>
 #include <esp_system.h>
-#include "Telemetry.h"
+#include "TelemetryTiming.h"
 #include "AlertWindow.h"
 #include "CloudControl.h"
 #include "CloudSettings.h"
@@ -65,7 +64,6 @@ void setFeedbackIntensity(float intensity);
 #endif
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
-const char* scriptURL = "https://script.google.com/macros/s/AKfycbynO6PeezcsT10WQaf6S5EsOnATbqMygyd8eIJhjy_2cd5CxTcDteisPzt5JTQeayjBxg/exec";
 
 /* ── SPI pin map (single IMU) ── */
 static const int PIN_MISO = 8;
@@ -131,8 +129,8 @@ bool     g_inSwing = false;
 int      g_dir = 0;
 float    g_angle = 0.0f;
 float    g_startAngle = 0.0f;
-uint32_t g_swingCount = 0;          // Sheets window
-float    g_swingDistanceSum = 0.0f; // Sheets window (m)
+uint32_t g_swingCount = 0;          // 10-second measurement window
+float    g_swingDistanceSum = 0.0f; // measurement window (m)
 uint32_t g_fbCount = 0;             // feedback window
 float    g_fbDist  = 0.0f;          // feedback window (m)
 uint32_t g_lastSwingTime = 0;
@@ -154,9 +152,10 @@ bool g_magnetometerReady = false;
 uint32_t g_nextMagMeasurementMs = 0;
 
 uint32_t lastMicros = 0;
-telemetry::WindowClock g_sheetsClock;
+telemetry::WindowClock g_windowClock;
 telemetry::Window g_lastWindow = {};
-uint32_t g_telemetryBoot = 0, g_telemetrySequence = 0;
+uint32_t g_bootId = 0, g_windowSequence = 0;
+bool g_lastWindowAlerted = false;
 uint32_t g_maxSampleGapUs = 0, g_sampleGapCount = 0;
 unsigned long lastFbTime   = 0;
 
@@ -315,25 +314,17 @@ void updateArm(float dt) {
     g_bias = (1.0f - BIAS_ADAPT_ALPHA) * g_bias + BIAS_ADAPT_ALPHA * wy_raw;
 }
 
-/* ── snapshot THIS arm's window; HTTP runs in Telemetry.cpp ── */
-void sendToGoogleSheets() {
+/* ── snapshot THIS arm's window for the existing cloud status exchange ── */
+void closeMeasurementWindow() {
   const uint32_t now = millis();
-  if (!g_sheetsClock.take(now, g_swingCount, g_swingDistanceSum, g_lastWindow)) return;
-  telemetry::Job job = {};
-  job.kind = telemetry::Kind::Window;
-  job.arm = ARM_CHAR;
-  job.bootId = g_telemetryBoot;
-  job.sequence = ++g_telemetrySequence;
-  job.capturedMs = now;
-  job.window = g_lastWindow;
-  job.alerted = g_alertWindow.take(now);
-  const bool queued = telemetry::enqueue(job);
-  const telemetry::Status state = telemetry::status();
-  Serial.printf("[window] boot=%lu seq=%lu start=%lu end=%lu late=%lu missed=%lu queued=%d depth=%lu dropped=%lu maxGapUs=%lu gaps=%lu\n",
-                (unsigned long)job.bootId, (unsigned long)job.sequence,
-                (unsigned long)job.window.startMs, (unsigned long)job.window.endMs,
-                (unsigned long)job.window.lateMs, (unsigned long)job.window.missedDeadlines,
-                queued, (unsigned long)state.queued, (unsigned long)state.dropped,
+  if (!g_windowClock.take(now, g_swingCount, g_swingDistanceSum, g_lastWindow)) return;
+  ++g_windowSequence;
+  g_lastWindowAlerted = g_alertWindow.take(now);
+  Serial.printf("[window] boot=%lu seq=%lu start=%lu end=%lu late=%lu missed=%lu count=%lu distanceCm=%.2f alerted=%d maxGapUs=%lu gaps=%lu\n",
+                (unsigned long)g_bootId, (unsigned long)g_windowSequence,
+                (unsigned long)g_lastWindow.startMs, (unsigned long)g_lastWindow.endMs,
+                (unsigned long)g_lastWindow.lateMs, (unsigned long)g_lastWindow.missedDeadlines,
+                (unsigned long)g_lastWindow.count, g_lastWindow.distanceCm, g_lastWindowAlerted,
                 (unsigned long)g_maxSampleGapUs, (unsigned long)g_sampleGapCount);
 }
 
@@ -419,7 +410,7 @@ void feedbackTick() {
   // broadcast my just-finished window
   PeerMsg m; m.arm = ARM_CHAR; m.count = myC; m.distance = myD;
   m.motorEnabled = g_motorEnabled; m.sensitivity = g_feedbackDeadZone;
-  m.pair=CLOUD_PAIR_ID; m.boot=g_telemetryBoot; m.sequence=++g_peerSequence;
+  m.pair=CLOUD_PAIR_ID; m.boot=g_bootId; m.sequence=++g_peerSequence;
   m.settingsRevision=g_settingsRevision;
   if(g_peerReady && m.sequence && cloud::signPeer(m)) esp_now_send(cloud::peerMac, (uint8_t*)&m, sizeof(m));
 
@@ -475,7 +466,7 @@ void setup() {
   Serial.println(WiFi.status()==WL_CONNECTED?"\nWiFi connected!":"\nWiFi offline; sensing continues");
   Serial.print(F("IP address: ")); Serial.println(WiFi.localIP());
 
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");   // UTC epoch time for event logging
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");   // UTC time for TLS certificate validation
   Serial.print(F("Syncing time"));
   uint32_t ntpStart = millis();
   while (time(nullptr) < 1000000000UL && millis() - ntpStart < 5000) {
@@ -511,10 +502,9 @@ void setup() {
 
   setFeedbackIntensity(0.0f);
 
-  g_telemetryBoot = esp_random();
-  if (!telemetry::begin(scriptURL)) Serial.println(F("Telemetry worker unavailable; sensing continues"));
+  g_bootId = esp_random();
   if (!cloud::begin()) Serial.println(F("Cloud unconfigured/unavailable; local HTTP disabled"));
-  g_sheetsClock.begin(millis());
+  g_windowClock.begin(millis());
   lastMicros = micros();
   lastFbTime   = millis();
   g_lastSwingTime = 0; g_swingStartMs = 0;
@@ -522,7 +512,7 @@ void setup() {
 
 void loop() {
   // Close the previous window before this sample can add another swing.
-  sendToGoogleSheets();
+  closeMeasurementWindow();
   const uint32_t now = micros();
   const uint32_t elapsedUs = telemetry::sampleElapsedUs(now, lastMicros);
   lastMicros = now;
