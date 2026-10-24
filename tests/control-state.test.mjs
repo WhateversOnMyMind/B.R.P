@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { deriveState, commandPayload, commandOutcome, parseSensitivity, captureProblem } from '../B.R.P Website/control/state.mjs';
 
 const device = (arm, extra = {}) => ({ id: `device-${arm}`, arm, bootId: '123', lastSeenMs: 99000,
-  status: { arm, motorEnabled: true, feedbackDeadZone: 0.055, settingsRevision: 4,
+  status: { arm, actuator: 'piezo', motorEnabled: true, feedbackDeadZone: 0.055, settingsRevision: 4,
     peerFresh: true, rawLogging: false, rawLogBytes: 0, captureId: '', captureUploaded: false }, ...extra });
 const snapshot = (extra = {}) => ({ pairId: 'test-pair', revision: 4, serverTimeMs: 100000,
   devices: [device('L'), device('R')], commands: [], captures: [], ...extra });
@@ -93,6 +93,28 @@ test('enabled setting does not invent physical motor output or a successful uplo
   assert.equal(state.arms.L.motorEnabled, true);
   assert.equal(state.arms.L.output, null);
   assert.equal(state.arms.L.downloadableCapture, null);
+});
+
+test('piezo feedback uses cadence intensity and never treats legacy motor PWM as a beep', () => {
+  const piezo = device('L', { status: { ...device('L').status,
+    feedbackIntensity: 0.5, toneActive: false, toneHz: 4000, pulsePeriodMs: 600, commandedPwm: 255 } });
+  const view = deriveState(snapshot({ devices: [piezo, device('R')] }), { authenticated: true });
+  assert.equal(view.arms.L.output, 0.5);
+  assert.equal(view.arms.L.toneActive, false);
+  assert.equal(view.arms.L.pulsePeriodMs, 600);
+  assert.equal(view.canCommandPair, true);
+});
+
+test('motor and unidentified firmware cannot receive piezo controls', () => {
+  for (const actuator of ['motor', undefined]) {
+    const other = device('R', { status: { ...device('R').status, actuator, commandedPwm: 128 } });
+    const view = deriveState(snapshot({ devices: [device('L'), other] }), { authenticated: true });
+    assert.equal(view.arms.R.compatible, false);
+    assert.equal(view.arms.R.output, null);
+    assert.equal(view.arms.R.canCommand, false);
+    assert.equal(view.canCommandPair, false);
+    assert.throws(() => commandPayload(view, 'set_motor_enabled', 'pair', true));
+  }
 });
 
 test('capture storage failures block new recordings and explain preserved recovery files', () => {

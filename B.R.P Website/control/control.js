@@ -3,7 +3,7 @@ import { ControlApi } from './api.mjs';
 import { deriveState, commandPayload, captureProblem } from './state.mjs';
 
 const $ = id => document.getElementById(id);
-const actionNames = { set_motor_enabled: 'Motor setting', set_sensitivity: 'Sensitivity', raw_start: 'Start capture', raw_stop: 'Stop capture', raw_clear: 'Clear local capture', recalibrate: 'Recalibrate' };
+const actionNames = { set_motor_enabled: 'Piezo setting', set_sensitivity: 'Sensitivity', raw_start: 'Start capture', raw_stop: 'Stop capture', raw_clear: 'Clear local capture', recalibrate: 'Recalibrate' };
 let api;
 let snapshot = null;
 let snapshotAt = 0;
@@ -52,8 +52,8 @@ function render() {
   $('connection').dataset.tone = signedIn && (!connected || !state.arms.L.fresh || !state.arms.R.fresh) ? 'stale' : '';
   $('pair-label').textContent = signedIn ? `Pair ${state.pairId} · revision ${state.revision}` : '';
   $('refresh').disabled = refreshing;
-  $('motor-on').disabled = !state.canCommandPair;
-  $('motor-off').disabled = !state.canCommandPair;
+  $('piezo-on').disabled = !state.canCommandPair;
+  $('piezo-off').disabled = !state.canCommandPair;
   $('sensitivity-submit').disabled = !state.canCommandPair;
   $('shared-status').textContent = pendingReceipt ? 'Awaiting command record' : state.busy ? 'Command pending' : state.canCommandPair ? 'Ready' : 'Controls unavailable';
   for (const arm of ['L', 'R']) {
@@ -64,7 +64,10 @@ function render() {
     card.querySelector('[data-field="freshness"]').dataset.tone = data.fresh ? '' : 'stale';
     setText(card, 'identity', data.device ? `${data.device.id} · boot ${data.device.bootId}` : 'No device has reported yet.');
     setText(card, 'enabled', data.motorEnabled === null ? 'Not reported' : data.motorEnabled ? 'ON' : 'OFF');
-    setText(card, 'output', numberText(data.output));
+    setText(card, 'output', data.output === null ? 'Not reported' : Math.round(data.output * 100) + '%');
+    setText(card, 'hardware', data.compatible ? 'Piezo · 4 kHz' : data.device ? 'Piezo firmware required' : 'Not reported');
+    setText(card, 'cadence', data.pulsePeriodMs === null ? 'Not reported' : data.pulsePeriodMs === 0 ? 'Silent' : data.pulsePeriodMs + ' ms between beeps');
+    setText(card, 'tone', data.toneActive === null ? 'Not reported' : data.toneActive ? 'ON at last report' : 'OFF at last report');
     setText(card, 'sensitivity', numberText(status.feedbackDeadZone));
     setText(card, 'revision', numberText(status.settingsRevision));
     setText(card, 'peer', status.peerFresh === true ? 'Fresh' : status.peerFresh === false ? 'Stale' : 'Not reported');
@@ -210,8 +213,8 @@ $('login-form').addEventListener('submit', async event => {
 });
 $('sign-out').addEventListener('click', () => { clearSession(); message('Signed out. Your access key and private state have been cleared from this page.'); $('access-key').focus(); });
 $('refresh').addEventListener('click', () => void refresh());
-$('motor-on').addEventListener('click', () => void submit('set_motor_enabled', 'pair', true));
-$('motor-off').addEventListener('click', () => void submit('set_motor_enabled', 'pair', false));
+$('piezo-on').addEventListener('click', () => void submit('set_motor_enabled', 'pair', true));
+$('piezo-off').addEventListener('click', () => void submit('set_motor_enabled', 'pair', false));
 $('sensitivity-form').addEventListener('submit', event => { event.preventDefault(); void submit('set_sensitivity', 'pair', $('sensitivity').value); });
 document.addEventListener('visibilitychange', () => { render(); if (!document.hidden) void refresh(); });
 window.addEventListener('pagehide', () => clearSession());

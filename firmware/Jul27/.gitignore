@@ -1,0 +1,4 @@
+.build/
+tests/*.exe
+CloudConfig.h
+WifiConfig.h

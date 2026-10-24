@@ -15,6 +15,8 @@ The goal is to streamline coordination between visually impaired runners and the
 - Saves event data directly to a backend Google Sheet
 - Functionality is priority
 - Designed with accessibility and minimalism in mind
+- Hosts BlindBalance piezo controls at `/control/`; matching ESP32 source and
+  setup instructions are in [firmware/README.md](firmware/README.md).
 
 ---
 

@@ -40,7 +40,7 @@ export async function createHarness() {
     return worker.fetch(req,env,{});
   }
   async function exchange(arm='L', changes={}, extra={}) {
-    return request('/v1/device/exchange',{as:arm,method:'POST',body:{bootId:arm==='R'?'202':'101',sequence:++sequences[arm],status:{arm:arm==='R'?'R':'L',motorEnabled:true,feedbackDeadZone:0.055,settingsRevision:0,peerFresh:true,tempC:25,rawLogging:false,rawLogBytes:0,captureId:'',captureUploaded:false,recalibrating:false,...changes},ack:null,...extra}});
+    return request('/v1/device/exchange',{as:arm,method:'POST',body:{bootId:arm==='R'?'202':'101',sequence:++sequences[arm],status:{arm:arm==='R'?'R':'L',actuator:'piezo',feedbackIntensity:0,toneActive:false,toneHz:4000,pulsePeriodMs:0,motorEnabled:true,feedbackDeadZone:0.055,settingsRevision:0,peerFresh:true,tempC:25,rawLogging:false,rawLogBytes:0,captureId:'',captureUploaded:false,recalibrating:false,...changes},ack:null,...extra}});
   }
   async function online() { await exchange('L'); await exchange('R'); }
   async function command(body={action:'set_motor_enabled',target:'pair',value:false},expectedRevision=0) { return request('/v1/operator/commands',{method:'POST',body:{expectedRevision,...body}}); }

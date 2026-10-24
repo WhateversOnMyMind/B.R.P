@@ -30,11 +30,14 @@ export function deriveState(snapshot, { elapsedMs = 0, authenticated = false, su
     const ageMs = valid && number(device?.lastSeenMs) && device.lastSeenMs <= snapshot.serverTimeMs
       ? serverNowMs - device.lastSeenMs : null;
     const fresh = ageMs !== null && ageMs >= 0 && ageMs < STALE_MS;
+    const compatible = status.actuator === 'piezo';
     const downloadableCapture = (snapshot?.captures || []).find(capture =>
       capture.deviceId === device?.id && capture.captureId === status.captureId) || null;
-    return [arm, { device, status, ageMs, fresh, canCommand: unlocked && fresh,
+    return [arm, { device, status, ageMs, fresh, compatible, canCommand: unlocked && fresh && compatible,
       motorEnabled: typeof status.motorEnabled === 'boolean' ? status.motorEnabled : null,
-      output: number(status.commandedPwm) ? status.commandedPwm : null,
+      output: compatible && number(status.feedbackIntensity) && status.feedbackIntensity >= 0 && status.feedbackIntensity <= 1 ? status.feedbackIntensity : null,
+      toneActive: compatible && typeof status.toneActive === 'boolean' ? status.toneActive : null,
+      pulsePeriodMs: compatible && number(status.pulsePeriodMs) && status.pulsePeriodMs >= 0 ? status.pulsePeriodMs : null,
       downloadableCapture }];
   }));
   return { revision: snapshot?.revision, pairId: snapshot?.pairId, serverNowMs, busy, arms,
@@ -63,7 +66,7 @@ export function commandPayload(state, action, target, value) {
   if (action === 'set_motor_enabled' || action === 'set_sensitivity') {
     if (target !== 'pair' || !state.canCommandPair) throw new Error('Both arms must be fresh and no command can be pending.');
     if (action === 'set_motor_enabled') {
-      if (typeof value !== 'boolean') throw new Error('Motor enable must be true or false.');
+      if (typeof value !== 'boolean') throw new Error('Piezo enable must be true or false.');
       payload.value = value;
     } else payload.value = parseSensitivity(value);
     return payload;

@@ -22,12 +22,12 @@ test('operator command waits for left execution and right ESP-NOW revision confi
   assert.equal(delivery.commands[0].bootId, '101');
   assert.equal((await (await h.exchange('R')).json()).commands.length, 0);
   const ack = { id: accepted.id, revision: accepted.revision, result: 'applied', message: '' };
-  assert.equal((await h.exchange('L', { motorEnabled: false, commandedPwm: 0, settingsRevision: accepted.revision }, { ack })).status, 200);
+  assert.equal((await h.exchange('L', { motorEnabled: false, feedbackIntensity: 0, settingsRevision: accepted.revision }, { ack })).status, 200);
   view = deriveState(await h.state(), { authenticated: true });
   assert.equal(view.commands[0].outcome.state, 'partial');
   assert.equal(view.arms.L.output, 0);
   assert.equal(view.canCommandPair, false);
-  await h.exchange('R', { motorEnabled: false, commandedPwm: 0, settingsRevision: accepted.revision });
+  await h.exchange('R', { motorEnabled: false, feedbackIntensity: 0, settingsRevision: accepted.revision });
   view = deriveState(await h.state(), { authenticated: true });
   assert.equal(view.commands[0].outcome.state, 'applied');
   assert.equal(view.canCommandPair, true);
