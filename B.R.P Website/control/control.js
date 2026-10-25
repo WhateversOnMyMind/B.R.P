@@ -126,9 +126,15 @@ async function loadHistory(append = false) {
     historyRows.push(...page.records); historyBeforeId = page.nextBeforeId;
     for (const row of page.records) {
       const tr = document.createElement('tr');
-      for (const value of [new Date(row.receivedMs).toLocaleString(), row.arm, row.count, Number(row.distanceCm).toFixed(2), row.alertedArm]) {
+      const measuredArm = row.arm === 'L' ? 'Left arm' : row.arm === 'R' ? 'Right arm' : 'Not reported';
+      for (const value of [new Date(row.receivedMs).toLocaleString(), measuredArm, row.count, Number(row.distanceCm).toFixed(2)]) {
         const td = document.createElement('td'); td.textContent = value; tr.append(td);
       }
+      const feedbackCell = document.createElement('td');
+      const feedback = document.createElement('span'); feedback.className = 'history-feedback';
+      feedback.textContent = row.alertedArm === 'L' ? 'Left arm alerted' : row.alertedArm === 'R' ? 'Right arm alerted' : row.alertedArm === 'None' ? 'No feedback' : 'Not reported';
+      feedback.dataset.active = String(row.alertedArm === 'L' || row.alertedArm === 'R');
+      feedbackCell.append(feedback); tr.append(feedbackCell);
       $('history-rows').append(tr);
     }
     $('history-status').textContent = historyRows.length
