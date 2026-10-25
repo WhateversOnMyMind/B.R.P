@@ -12,6 +12,8 @@ let submitting = false;
 let connected = false;
 let pendingReceipt = null;
 let sessionEpoch = 0;
+let historyInitialized = false, historyBusy = false, historyExporting = false;
+let historyRows = [], historyBeforeId = null;
 const cards = {};
 
 function message(text, error = false) { $('message').textContent = text; $('message').dataset.error = String(error); }
@@ -91,6 +93,79 @@ function render() {
   }
   renderActivity(state);
   renderCaptures();
+  renderHistoryControls();
+}
+
+function renderHistoryControls() {
+  const disabled = !api?.authenticated || historyBusy || historyExporting;
+  for (const id of ['history-date', 'history-refresh', 'history-download', 'history-more']) $(id).disabled = disabled;
+  $('history-more').hidden = historyBeforeId === null;
+}
+
+function historyRange() {
+  const value = $('history-date').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('Choose a date for the logs.');
+  const from = new Date(value + 'T00:00:00');
+  const to = new Date(from); to.setDate(to.getDate() + 1);
+  if (!Number.isFinite(from.getTime())) throw new Error('Choose a valid date.');
+  return { fromMs: from.getTime(), toMs: to.getTime() };
+}
+
+async function loadHistory(append = false) {
+  if (!api?.authenticated || historyBusy || historyExporting) return;
+  let range;
+  try { range = historyRange(); } catch (error) { $('history-status').textContent = error.message; return; }
+  const epoch = sessionEpoch;
+  historyBusy = true;
+  if (!append) { historyRows = []; historyBeforeId = null; $('history-rows').replaceChildren(); }
+  $('history-status').textContent = 'Loading saved summaries…'; renderHistoryControls();
+  try {
+    const page = await api.measurements({ ...range, limit: 50, ...(append && historyBeforeId !== null ? { beforeId: historyBeforeId } : {}) });
+    if (epoch !== sessionEpoch) return;
+    if (!Array.isArray(page.records)) throw new Error('Invalid history response.');
+    historyRows.push(...page.records); historyBeforeId = page.nextBeforeId;
+    for (const row of page.records) {
+      const tr = document.createElement('tr');
+      for (const value of [new Date(row.receivedMs).toLocaleString(), row.arm, row.count, Number(row.distanceCm).toFixed(2), row.alertedArm]) {
+        const td = document.createElement('td'); td.textContent = value; tr.append(td);
+      }
+      $('history-rows').append(tr);
+    }
+    $('history-status').textContent = historyRows.length
+      ? `Showing ${historyRows.length} saved summaries${historyBeforeId !== null ? '; more rows available' : ''}. Load logs to refresh; CSV includes the entire selected date.`
+      : 'No saved summaries for this date. New summaries appear after an online board completes a 10-second window.';
+  } catch (error) {
+    if (epoch !== sessionEpoch || error.name === 'SessionChangedError') return;
+    if (!api.authenticated) clearSession();
+    $('history-status').textContent = `Logs unavailable: ${error.message}`;
+  } finally {
+    if (epoch === sessionEpoch) { historyBusy = false; renderHistoryControls(); }
+  }
+}
+
+async function downloadHistory() {
+  if (!api?.authenticated || historyBusy || historyExporting) return;
+  const epoch = sessionEpoch;
+  historyExporting = true; renderHistoryControls();
+  $('history-status').textContent = 'Preparing CSV…';
+  try {
+    const result = await api.exportMeasurements(historyRange(), count => {
+      if (epoch === sessionEpoch) $('history-status').textContent = `Preparing CSV · ${count} summaries…`;
+    });
+    if (epoch !== sessionEpoch) return;
+    if (!result.count) { $('history-status').textContent = 'No saved summaries for this date.'; return; }
+    const url = URL.createObjectURL(new Blob([result.csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url;
+    link.download = `blindbalance-summaries-${$('history-date').value}.csv`;
+    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $('history-status').textContent = `${result.count} saved summaries exported. Download handed to your browser.`;
+  } catch (error) {
+    if (epoch !== sessionEpoch || error.name === 'SessionChangedError') return;
+    if (!api.authenticated) clearSession();
+    $('history-status').textContent = `Export unavailable: ${error.message}`;
+  } finally {
+    if (epoch === sessionEpoch) { historyExporting = false; renderHistoryControls(); }
+  }
 }
 
 function renderActivity(state) {
@@ -138,6 +213,9 @@ function renderCaptures() {
 function clearSession() {
   sessionEpoch++;
   api?.signOut(); snapshot = null; pendingReceipt = null; connected = false; submitting = false;
+  historyInitialized = false; historyBusy = false; historyExporting = false;
+  historyRows = []; historyBeforeId = null; $('history-rows').replaceChildren();
+  $('history-status').textContent = 'Choose a date to view saved summaries.';
   $('access-key').value = '';
   render();
 }
@@ -152,6 +230,12 @@ async function refresh() {
     if (epoch !== sessionEpoch) return false;
     if (!Number.isFinite(next.serverTimeMs) || !Number.isSafeInteger(next.revision) || !Array.isArray(next.devices) || !Array.isArray(next.commands) || !Array.isArray(next.captures)) throw new Error('The backend returned an invalid state.');
     snapshot = next; snapshotAt = requestAt; connected = true;
+    if (!historyInitialized) {
+      historyInitialized = true;
+      const today = new Date();
+      $('history-date').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      void loadHistory();
+    }
     if (pendingReceipt && (pendingReceipt.id ? next.commands.some(command => command.id === pendingReceipt.id) : next.revision > pendingReceipt.baseline)) pendingReceipt = null;
     return true;
   } catch (error) {
@@ -223,6 +307,10 @@ $('login-form').addEventListener('submit', async event => {
 });
 $('sign-out').addEventListener('click', () => { clearSession(); message('Signed out. Your access key and private state have been cleared from this page.'); $('access-key').focus(); });
 $('refresh').addEventListener('click', () => void refresh());
+$('history-form').addEventListener('submit', event => { event.preventDefault(); void loadHistory(); });
+$('history-date').addEventListener('change', () => void loadHistory());
+$('history-more').addEventListener('click', () => void loadHistory(true));
+$('history-download').addEventListener('click', () => void downloadHistory());
 $('feedback-on').addEventListener('click', () => void submit('set_motor_enabled', 'pair', true));
 $('feedback-off').addEventListener('click', () => void submit('set_motor_enabled', 'pair', false));
 $('sensitivity-form').addEventListener('submit', event => { event.preventDefault(); void submit('set_sensitivity', 'pair', $('sensitivity').value); });

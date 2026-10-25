@@ -48,6 +48,35 @@ export class ControlApi {
     return result;
   }
   state() { return this.#request('/v1/operator/state'); }
+  measurements({fromMs,toMs,limit=100,beforeId}={}) {
+    const query=new URLSearchParams({fromMs,toMs,limit});
+    if(beforeId!==undefined) query.set('beforeId',beforeId);
+    return this.#request('/v1/operator/measurements?'+query);
+  }
+  async exportMeasurements({fromMs,toMs,limit=1000},onProgress=()=>{}) {
+    const generation=this.#generation;
+    const ensureCurrent=()=> {
+      if(generation!==this.#generation) throw Object.assign(new Error('Session changed.'),{name:'SessionChangedError'});
+    };
+    const lines=['Received At (UTC),Arm,Count,Distance(cm),Alerted Arm,Device,Boot ID,Window Sequence,Window Start(ms since boot),Window End(ms since boot),Window Late(ms),Missed Deadlines'];
+    const cell=value=> {
+      let text=String(value??'');
+      if(typeof value==='string'&&/^[=+@\-\t\r]/.test(text)) text="'"+text;
+      return /[,"\r\n]/.test(text)?'"'+text.replaceAll('"','""')+'"':text;
+    };
+    let beforeId,count=0;
+    do {
+      ensureCurrent();
+      const page=await this.measurements({fromMs,toMs,limit,beforeId});
+      ensureCurrent();
+      if(!Array.isArray(page.records)||!(page.nextBeforeId===null||Number.isSafeInteger(page.nextBeforeId)&&page.nextBeforeId>0&&page.records.length>0&&(beforeId===undefined||page.nextBeforeId<beforeId))) throw new Error('Invalid history page. Export cancelled.');
+      onProgress(count+page.records.length); ensureCurrent();
+      for(const r of page.records) lines.push([new Date(r.receivedMs).toISOString(),r.arm,r.count,r.distanceCm,r.alertedArm,r.deviceId,r.bootId,r.windowSequence,r.windowStartMs,r.windowEndMs,r.windowLateMs,r.windowMissedDeadlines].map(cell).join(','));
+      count+=page.records.length;
+      beforeId=page.nextBeforeId;
+    } while(beforeId!==null);
+    return {count,csv:lines.join('\r\n')+'\r\n'};
+  }
   command(payload) { return this.#request('/v1/operator/commands', { method: 'POST', body: payload }); }
   download(deviceId, captureId) {
     return this.#request(`/v1/operator/captures/${encodeURIComponent(deviceId)}/${encodeURIComponent(captureId)}`, { blob: true });

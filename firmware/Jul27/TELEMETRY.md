@@ -20,12 +20,19 @@ The operator state API returns each board's latest accepted status, including:
   acquisition boundaries and timing diagnostics, in board uptime milliseconds.
 - `maxSampleGapUs` and `sampleGapCount`: sampling-gap diagnostics.
 
-These are latest-status values, not a history table. A newer window replaces the
-previous one. Offline periods, slow requests or capture uploads can cause intermediate
-windows never to reach the server. The existing API stores these optional fields
-without a deployment or database migration. Device receipt time is separate from
-the acquisition window timestamps. Saved raw captures remain downloadable through
-Cloudflare R2; they require the LittleFS setup described in `CLOUD_CONTROL.md`.
+The status response shows the latest window. After backend migration
+`0002_measurements.sql` and its Worker deployment, each received completed window
+is also archived once in D1 by device, boot and window sequence. At `/control/`,
+**Automatic logs** lets an operator choose a local date and download saved count,
+distance and commanded-alert summaries as CSV. This happens without raw-capture
+Start/Stop or an open browser, and needs no firmware change.
+
+Offline periods, slow requests or capture uploads can still cause intermediate
+windows never to reach the server: the firmware retains only its latest summary.
+History starts with the new backend; previously overwritten windows cannot be
+reconstructed. Server receipt time (UTC in CSV) is separate from board-relative
+acquisition boundaries. Saved raw captures remain downloadable through Cloudflare
+R2; they require the LittleFS setup described in `CLOUD_CONTROL.md`.
 
 Feedback-setting changes are tracked by Cloudflare command acknowledgments.
 The old Sheets event queue and its upload counters are no longer used.

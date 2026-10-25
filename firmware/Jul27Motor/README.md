@@ -21,7 +21,9 @@ commanded PWM. The same page also recognizes the piezo variant.
 - Disable, recalibration and an expired peer report stop output. Peer timeout is
   6 seconds. The output pin is held low during startup.
 - Ten-second windows report count, distance in centimetres, and commanded motor
-  activity to Cloudflare's latest status. These are snapshots, not archived rows.
+  activity to Cloudflare. The backend archives each received window once; download
+  history from **Automatic logs** at `/control/`. Internet is needed to deliver
+  windows; this firmware retains only the latest summary during an outage.
 - Stopped raw captures upload to private Cloudflare R2 for authorized downloads.
   Capture storage requires a separately provisioned LittleFS partition with at
   least 2,000,160 bytes plus filesystem overhead. Mount failure never auto-formats.

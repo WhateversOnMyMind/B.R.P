@@ -1,11 +1,17 @@
 import {DatabaseSync} from 'node:sqlite';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import worker from '../src/worker.mjs';
 
 export const hash = value => createHash('sha256').update(value).digest('hex');
 export class SQLiteD1 {
-  constructor() { this.sqlite = new DatabaseSync(':memory:'); this.sqlite.exec(readFileSync(new URL('../migrations/0001_control.sql', import.meta.url), 'utf8')); }
+  constructor() {
+    this.sqlite = new DatabaseSync(':memory:');
+    const directory=new URL('../migrations/',import.meta.url);
+    for(const file of readdirSync(directory).filter(name=>name.endsWith('.sql')).sort()) {
+      this.sqlite.exec(readFileSync(new URL(file,directory),'utf8'));
+    }
+  }
   prepare(sql) {
     const db = this.sqlite;
     return { args: [], bind(...args) { this.args = args; return this; },

@@ -53,6 +53,17 @@ function validateStatus(body,auth) {
   if(!Number.isSafeInteger(s.rawLogBytes)||s.rawLogBytes<0||s.rawLogBytes>MAX_CAPTURE) fail(400,'Invalid rawLogBytes');
   if(typeof s.captureId!=='string'||(s.captureId!==''&&!ID.test(s.captureId))) fail(400,'Invalid captureId');
   if(s.rawLogging&&!s.captureId) fail(400,'Recording requires captureId');
+  if(s.windowReady!==undefined&&typeof s.windowReady!=='boolean') fail(400,'Invalid windowReady');
+  if(s.windowReady) {
+    for(const key of ['windowSequence','windowCount','windowStartMs','windowEndMs']) {
+      if(!Number.isSafeInteger(s[key])||s[key]<0||s[key]>4294967295||(key==='windowSequence'&&s[key]===0)) fail(400,`Invalid ${key}`);
+    }
+    if(!Number.isFinite(s.windowDistanceCm)||s.windowDistanceCm<0) fail(400,'Invalid windowDistanceCm');
+    if(s.windowAlerted!==undefined&&typeof s.windowAlerted!=='boolean') fail(400,'Invalid windowAlerted');
+    for(const key of ['windowLateMs','windowMissedDeadlines']) {
+      if(s[key]!==undefined&&(!Number.isSafeInteger(s[key])||s[key]<0||s[key]>4294967295)) fail(400,`Invalid ${key}`);
+    }
+  }
 }
 function bootFor(command,arm) { return arm==='L'?command.left_boot:command.right_boot; }
 
@@ -76,6 +87,16 @@ async function exchange(request,env,auth,now) {
     expire(env.DB,auth.pair_id,now),
     stmt(env.DB,`UPDATE commands SET state='unknown' WHERE pair_id=? AND state='pending' AND ${accepted} AND ((left_boot IS NOT NULL AND left_boot<>(SELECT boot_id FROM devices WHERE pair_id=? AND arm='L')) OR (right_boot IS NOT NULL AND right_boot<>(SELECT boot_id FROM devices WHERE pair_id=? AND arm='R')))`,auth.pair_id,auth.device_id,exchangeId,auth.pair_id,auth.pair_id)
   ];
+  if(body.status.windowReady) {
+    const s=body.status;
+    // Archive only an accepted exchange. Repeated heartbeats retain the first
+    // received copy of a window; rebooted window sequences have their own key.
+    statements.push(stmt(env.DB,`INSERT OR IGNORE INTO measurements(pair_id,device_id,arm,boot_id,window_sequence,received_ms,swing_count,distance_cm,alerted,window_start_ms,window_end_ms,window_late_ms,window_missed_deadlines)
+      SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? WHERE ${accepted}`,
+      auth.pair_id,auth.device_id,auth.arm,body.bootId,s.windowSequence,now,s.windowCount,s.windowDistanceCm,
+      typeof s.windowAlerted==='boolean'?(s.windowAlerted?1:0):null,s.windowStartMs,s.windowEndMs,
+      s.windowLateMs??null,s.windowMissedDeadlines??null,auth.device_id,exchangeId));
+  }
   if(ack) statements.push(stmt(env.DB,`INSERT OR IGNORE INTO command_results(command_id,arm,result,message,received_ms) SELECT id,?,?,?,? FROM commands WHERE id=? AND pair_id=? AND revision=? AND state='pending' AND expires_ms>? AND ${accepted} AND (CASE WHEN ?='L' THEN left_boot ELSE right_boot END)=?`,auth.arm,ack.result,ack.message??'',now,ack.id,auth.pair_id,ack.revision,now,auth.device_id,exchangeId,auth.arm,body.bootId));
   if(auth.arm==='R') statements.push(stmt(env.DB,`INSERT OR IGNORE INTO command_results(command_id,arm,result,message,received_ms) SELECT id,'R','applied','Confirmed in device status',? FROM commands WHERE pair_id=? AND target='pair' AND state='pending' AND revision=? AND right_boot=? AND expires_ms>? AND ${accepted} AND ((action='set_motor_enabled' AND json_extract(value_json,'$')=?) OR (action='set_sensitivity' AND abs(json_extract(value_json,'$')-?)<0.000001))`,now,auth.pair_id,body.status.settingsRevision,body.bootId,now,auth.device_id,exchangeId,body.status.motorEnabled?1:0,body.status.feedbackDeadZone));
   statements.push(stmt(env.DB,`UPDATE commands SET state=CASE WHEN EXISTS (SELECT 1 FROM command_results r WHERE r.command_id=commands.id AND r.result='failed') THEN 'failed' ELSE 'applied' END WHERE pair_id=? AND state='pending' AND (EXISTS (SELECT 1 FROM command_results r WHERE r.command_id=commands.id AND r.result='failed') OR (SELECT count(*) FROM command_results r WHERE r.command_id=commands.id AND r.result='applied')=CASE WHEN target='pair' THEN 2 ELSE 1 END)`,auth.pair_id));
@@ -143,6 +164,30 @@ async function state(env,auth,now) {
     captures:result[5].results.map(c=>({deviceId:c.device_id,captureId:c.capture_id,bytes:c.bytes,sha256:c.sha256,createdMs:c.created_ms}))});
 }
 
+async function measurements(request,env,auth) {
+  const query=new URL(request.url).searchParams;
+  const integer=(key,fallback,min=0,max=Number.MAX_SAFE_INTEGER)=> {
+    const raw=query.get(key);
+    if(raw===null&&fallback!==undefined) return fallback;
+    if(raw===null||!/^\d+$/.test(raw)) fail(400,`Invalid ${key}`);
+    const value=Number(raw);
+    if(!Number.isSafeInteger(value)||value<min||value>max) fail(400,`Invalid ${key}`);
+    return value;
+  };
+  const from=integer('fromMs'), to=integer('toMs');
+  if(to<=from||to-from>31*86400000) fail(400,'Select a range of up to 31 days');
+  const limit=integer('limit',100,1,1000);
+  const before=integer('beforeId',Number.MAX_SAFE_INTEGER,1);
+  const found=await rows(env.DB,`SELECT * FROM measurements WHERE pair_id=? AND received_ms>=? AND received_ms<? AND id<? ORDER BY id DESC LIMIT ?`,auth.pair_id,from,to,before,limit+1);
+  const more=found.length>limit;
+  const page=found.slice(0,limit);
+  return Response.json({records:page.map(r=>({id:r.id,deviceId:r.device_id,arm:r.arm,bootId:r.boot_id,
+    windowSequence:r.window_sequence,receivedMs:r.received_ms,count:r.swing_count,distanceCm:r.distance_cm,
+    alertedArm:r.alerted===null?'Unknown':r.alerted?r.arm:'None',windowStartMs:r.window_start_ms,
+    windowEndMs:r.window_end_ms,windowLateMs:r.window_late_ms,windowMissedDeadlines:r.window_missed_deadlines})),
+    nextBeforeId:more?page.at(-1).id:null});
+}
+
 async function upload(request,env,auth,captureId,now) {
   if(!UUID.test(captureId)) fail(400,'Invalid captureId');
   const length=request.headers.get('Content-Length');
@@ -193,6 +238,7 @@ export default {
         if(path.startsWith('/v1/device/')&&auth.role!=='device') fail(403,'Device credential required');
         if(path==='/v1/device/exchange'&&request.method==='POST') response=await exchange(request,env,auth,now);
         else if(path==='/v1/operator/state'&&request.method==='GET') response=await state(env,auth,now);
+        else if(path==='/v1/operator/measurements'&&request.method==='GET') response=await measurements(request,env,auth);
         else if(path==='/v1/operator/commands'&&request.method==='POST') response=await submit(request,env,auth,now);
         else if(/^\/v1\/device\/captures\/[^/]+$/.test(path)&&request.method==='PUT') response=await upload(request,env,auth,path.split('/')[4],now);
         else if(/^\/v1\/operator\/captures\/[^/]+\/[^/]+$/.test(path)&&request.method==='GET') response=await download(env,auth,...path.split('/').slice(4));

@@ -30,6 +30,19 @@
         <p class="muted">Both arms must be fresh and use matching motor or piezo firmware. Changes are applied by the left arm, then confirmed by the right.</p>
         <div class="settings-grid"><div><h3 id="feedback-title">Feedback setting</h3><p id="feedback-help">Connect both arms with matching motor or piezo firmware to control feedback.</p><div class="button-group"><button type="button" id="feedback-on" disabled>Set ON</button><button type="button" id="feedback-off" class="secondary" disabled>Set OFF</button></div></div><form id="sensitivity-form"><label for="sensitivity">Sensitivity · dead zone</label><p id="sensitivity-help">Range 0–0.3. A larger dead zone tolerates more difference.</p><div class="input-action"><input id="sensitivity" type="number" min="0" max="0.3" step="any" value="0.055" required aria-describedby="sensitivity-help"><button id="sensitivity-submit" type="submit" disabled>Apply</button></div></form></div>
       </section>
+      <section class="panel" aria-labelledby="history-title">
+        <div class="section-heading"><h2 id="history-title">Automatic logs</h2><span>10-second summaries</span></div>
+        <p class="muted">Summaries save automatically while the boards are online, even with this page closed. No Start or Stop needed. History begins when cloud logging was enabled; missed offline windows cannot be recovered by the current firmware.</p>
+        <form id="history-form" class="history-tools">
+          <div><label for="history-date">Date (your local time)</label><input id="history-date" type="date" required></div>
+          <button id="history-refresh" type="submit" class="secondary">Load logs</button>
+          <button id="history-download" type="button">Download CSV</button>
+        </form>
+        <p id="history-status" class="muted" role="status">Choose a date to view saved summaries.</p>
+        <div class="history-scroll"><table class="history-table"><caption class="visually-hidden">Saved arm measurements, newest received first</caption><thead><tr><th scope="col">Received at</th><th scope="col">Arm</th><th scope="col">Count</th><th scope="col">Distance (cm)</th><th scope="col">Alerted arm</th></tr></thead><tbody id="history-rows"></tbody></table></div>
+        <button id="history-more" type="button" class="secondary" hidden>Load older rows</button>
+        <p class="caption">Alerted arm means feedback was commanded during that window, not physically measured. Times shown here use your local time; CSV timestamps use UTC. Download includes all saved rows for the selected date.</p>
+      </section>
       <section class="panel" aria-labelledby="commands-title"><div class="section-heading"><h2 id="commands-title">Command activity</h2><span>Accepted ≠ applied</span></div><p class="muted">A pair command is applied only after both arms confirm. A failed or expired command may still have changed one arm; check each arm’s reported state.</p><ol id="commands" class="activity-list"></ol></section>
       <section class="panel" aria-labelledby="captures-title"><div class="section-heading"><h2 id="captures-title">Saved captures</h2><span>Private, authorized downloads</span></div><p class="muted">Only finalized, verified uploads appear here. Clearing a local capture does not delete its saved copy.</p><ul id="captures" class="capture-list"></ul></section>
     </div>
