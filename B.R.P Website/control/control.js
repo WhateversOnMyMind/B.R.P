@@ -47,12 +47,15 @@ for (const arm of ['L', 'R']) {
 
 function render() {
   const state = currentState();
-  const signedIn = Boolean(api?.authenticated && snapshot);
-  $('workspace').hidden = !signedIn;
+  // Anyone may view; only a signed-in operator may command or download captures.
+  const signedIn = Boolean(api?.authenticated);
+  const viewing = Boolean(snapshot);
+  $('workspace').hidden = !viewing;
   $('login-panel').hidden = signedIn;
-  $('connection').textContent = !api ? 'Not configured' : !signedIn ? 'Signed out' : !connected ? 'Connection interrupted' : state.arms.L.fresh && state.arms.R.fresh ? 'Pair connected' : 'Waiting for fresh devices';
-  $('connection').dataset.tone = signedIn && (!connected || !state.arms.L.fresh || !state.arms.R.fresh) ? 'stale' : '';
-  $('pair-label').textContent = signedIn ? `Pair ${state.pairId} · revision ${state.revision}` : '';
+  $('sign-out').hidden = !signedIn;
+  $('connection').textContent = !api ? 'Not configured' : !viewing ? 'Not connected' : !connected ? 'Connection interrupted' : state.arms.L.fresh && state.arms.R.fresh ? 'Pair connected' : 'Waiting for fresh devices';
+  $('connection').dataset.tone = viewing && (!connected || !state.arms.L.fresh || !state.arms.R.fresh) ? 'stale' : '';
+  $('pair-label').textContent = viewing ? `Pair ${state.pairId} · revision ${state.revision} · ${signedIn ? 'operator' : 'view only'}` : '';
   $('refresh').disabled = refreshing;
   $('feedback-on').disabled = !state.canCommandPair;
   $('feedback-off').disabled = !state.canCommandPair;
@@ -97,7 +100,7 @@ function render() {
 }
 
 function renderHistoryControls() {
-  const disabled = !api?.authenticated || historyBusy || historyExporting;
+  const disabled = !api || !snapshot || historyBusy || historyExporting;
   for (const id of ['history-date', 'history-refresh', 'history-download', 'history-more']) $(id).disabled = disabled;
   $('history-more').hidden = historyBeforeId === null;
 }
@@ -112,7 +115,7 @@ function historyRange() {
 }
 
 async function loadHistory(append = false) {
-  if (!api?.authenticated || historyBusy || historyExporting) return;
+  if (!api || historyBusy || historyExporting) return;
   let range;
   try { range = historyRange(); } catch (error) { $('history-status').textContent = error.message; return; }
   const epoch = sessionEpoch;
@@ -142,7 +145,6 @@ async function loadHistory(append = false) {
       : 'No saved summaries for this date. New summaries appear after an online board completes a 10-second window.';
   } catch (error) {
     if (epoch !== sessionEpoch || error.name === 'SessionChangedError') return;
-    if (!api.authenticated) clearSession();
     $('history-status').textContent = `Logs unavailable: ${error.message}`;
   } finally {
     if (epoch === sessionEpoch) { historyBusy = false; renderHistoryControls(); }
@@ -150,7 +152,7 @@ async function loadHistory(append = false) {
 }
 
 async function downloadHistory() {
-  if (!api?.authenticated || historyBusy || historyExporting) return;
+  if (!api || historyBusy || historyExporting) return;
   const epoch = sessionEpoch;
   historyExporting = true; renderHistoryControls();
   $('history-status').textContent = 'Preparing CSV…';
@@ -167,7 +169,6 @@ async function downloadHistory() {
     $('history-status').textContent = `${result.count} saved summaries exported. Download handed to your browser.`;
   } catch (error) {
     if (epoch !== sessionEpoch || error.name === 'SessionChangedError') return;
-    if (!api.authenticated) clearSession();
     $('history-status').textContent = `Export unavailable: ${error.message}`;
   } finally {
     if (epoch === sessionEpoch) { historyExporting = false; renderHistoryControls(); }
@@ -198,7 +199,8 @@ function renderActivity(state) {
 
 function renderCaptures() {
   const captures = snapshot?.captures || [];
-  const key = JSON.stringify(captures);
+  const signedIn = Boolean(api?.authenticated);
+  const key = JSON.stringify([signedIn, captures]);
   if ($('captures').dataset.key === key) return;
   $('captures').dataset.key = key;
   $('captures').replaceChildren();
@@ -211,6 +213,8 @@ function renderCaptures() {
     const sub = document.createElement('small'); sub.textContent = `${numberText(capture.bytes, ' bytes')} · SHA-256 ${capture.sha256}`; detail.append(sub);
     const button = document.createElement('button'); button.type = 'button'; button.className = 'secondary'; button.textContent = 'Download CSV';
     button.setAttribute('aria-label', `Download capture ${capture.captureId}`);
+    button.disabled = !signedIn;
+    if (!signedIn) button.title = 'Sign in with the operator key to download captures.';
     button.addEventListener('click', () => void download(capture));
     li.append(detail, button); $('captures').append(li);
   }
@@ -226,8 +230,15 @@ function clearSession() {
   render();
 }
 
+// Forget only the operator key; keep showing the public view.
+function signOutOperator() {
+  api?.signOut(); pendingReceipt = null; submitting = false;
+  $('access-key').value = '';
+  render();
+}
+
 async function refresh() {
-  if (!api?.authenticated || refreshing) return false;
+  if (!api || refreshing) return false;
   const epoch = sessionEpoch;
   const requestAt = performance.now();
   refreshing = true;
@@ -247,7 +258,7 @@ async function refresh() {
   } catch (error) {
     if (epoch !== sessionEpoch || error.name === 'SessionChangedError') return false;
     connected = false;
-    if (!api.authenticated) clearSession();
+    if (error.publicView) snapshot = null;
     message(error.status === 401 || error.status === 403 ? error.message : 'Could not refresh state. Controls are paused; reported values may be out of date.', true);
     return false;
   } finally { refreshing = false; render(); }
@@ -269,7 +280,7 @@ async function submit(action, target, value) {
     message(`Command accepted at revision ${accepted.revision}. Check per-arm results below; application is not yet confirmed.`);
   } catch (error) {
     if (epoch !== sessionEpoch || error.name === 'SessionChangedError') return;
-    if (!api.authenticated) { clearSession(); message(error.message, true); }
+    if (!api.authenticated) { pendingReceipt = null; message(error.message, true); }
     else if ([400, 409, 503].includes(error.status)) { pendingReceipt = null; connected = false; message(`Command not accepted: ${error.message} Refreshing the latest state.`, true); }
     else message('Submission outcome unknown. It will not be retried automatically. Controls stay paused until the backend reports a newer command; check the devices before reconnecting.', true);
   } finally {
@@ -295,7 +306,6 @@ async function download(capture) {
     message('Capture verified. Download handed to your browser.');
   } catch (error) {
     if (epoch !== sessionEpoch || error.name === 'SessionChangedError') return;
-    if (!api.authenticated) clearSession();
     message(`Download unavailable: ${error.message}`, true);
   }
 }
@@ -306,12 +316,12 @@ $('login-form').addEventListener('submit', async event => {
   try {
     api.signIn($('access-key').value); $('access-key').value = ''; $('sign-in').disabled = true;
     message('Checking your access…');
-    if (await refresh()) message('Connected. Values below are device-reported; commands require confirmation.');
-    else if (!snapshot) api.signOut();
+    if (await refresh() && api.authenticated) message('Signed in as operator. Controls are available; commands require confirmation.');
+    else api.signOut();
   } catch (error) { message(error.message, true); }
   finally { $('sign-in').disabled = !api; render(); }
 });
-$('sign-out').addEventListener('click', () => { clearSession(); message('Signed out. Your access key and private state have been cleared from this page.'); $('access-key').focus(); });
+$('sign-out').addEventListener('click', () => { signOutOperator(); message('Signed out. Viewing only; your access key has been cleared from this page.'); $('access-key').focus(); });
 $('refresh').addEventListener('click', () => void refresh());
 $('history-form').addEventListener('submit', event => { event.preventDefault(); void loadHistory(); });
 $('history-date').addEventListener('change', () => void loadHistory());
@@ -331,5 +341,9 @@ catch {
   message('Device controls are unavailable until backend setup is complete.');
 }
 render();
+if (api) {
+  message('Loading device status…');
+  void refresh().then(ok => { if (ok && !api.authenticated) message('Viewing only. Sign in with the operator key to change settings, record, or download captures.'); });
+}
 setInterval(() => { if (!document.hidden) void refresh(); }, 2000);
 setInterval(() => { if (!document.hidden) render(); }, 1000);

@@ -11,10 +11,9 @@ test('configuration accepts only explicit HTTPS API URLs without credentials or 
 });
 
 test('a revoked operator key is forgotten and cannot authorize another request', async () => {
-  let calls = 0;
+  const sent = [];
   const api = new ControlApi('https://control.example.com', async (url, options) => {
-    calls++;
-    assert.equal(options.headers.Authorization, 'Bearer test-only-key');
+    sent.push(options.headers.Authorization);
     assert.equal(options.credentials, 'omit');
     assert.equal(options.redirect, 'error');
     return new Response('{"error":"revoked"}', { status: 401 });
@@ -22,8 +21,23 @@ test('a revoked operator key is forgotten and cannot authorize another request',
   api.signIn('test-only-key');
   await assert.rejects(api.state(), error => error.status === 401);
   assert.equal(api.authenticated, false);
-  await assert.rejects(api.state());
-  assert.equal(calls, 1);
+  // The next view request is sent as a public read, without the forgotten key.
+  await assert.rejects(api.state(), error => error.publicView === true);
+  await assert.rejects(api.command({ expectedRevision: 0, action: 'set_motor_enabled', target: 'pair', value: false }), error => error.status === 401);
+  assert.deepEqual(sent, ['Bearer test-only-key', undefined]);
+});
+
+test('signed-out viewing sends state and history requests without any key', async () => {
+  const urls = [];
+  const api = new ControlApi('https://control.example.com', async (url, options) => {
+    urls.push(url);
+    assert.equal(options.headers.Authorization, undefined);
+    return new Response(url.includes('measurements') ? '{"records":[],"nextBeforeId":null}' : '{"pairId":"pair-a"}');
+  });
+  assert.equal((await api.state()).pairId, 'pair-a');
+  assert.deepEqual((await api.measurements({ fromMs: 0, toMs: 1 })).records, []);
+  await assert.rejects(api.download('device-L', 'capture-1'), error => error.status === 401);
+  assert.equal(urls.length, 2);
 });
 
 test('signing out prevents an older in-flight response from restoring private state', async () => {

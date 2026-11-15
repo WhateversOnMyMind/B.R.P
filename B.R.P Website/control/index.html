@@ -18,10 +18,10 @@
     <div class="page-heading"><div><p class="eyebrow">BLINDBALANCE / OPERATOR CONSOLE</p><h1>A clear view.<br>Both arms.</h1><p class="intro">Check your pair, adjust feedback, and collect a short capture.</p></div><span class="badge" id="connection">Signed out</span></div>
     <div id="configuration" class="notice" hidden></div>
     <section id="login-panel" class="panel login-panel" aria-labelledby="login-title">
-      <div><p class="eyebrow">AUTHORIZED OPERATORS</p><h2 id="login-title">Connect to your pair</h2><p>Your individual access key opens only your assigned pair.<br>The key stays in memory until you sign out or close this page.</p></div>
-      <form id="login-form"><label for="access-key">Operator access key</label><input id="access-key" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="Paste your access key"><button id="sign-in" type="submit">Connect</button></form>
+      <div><p class="eyebrow">OPERATOR SIGN-IN</p><h2 id="login-title">Sign in to change settings</h2><p>Viewing needs no key. Sign in to change feedback settings, record, recalibrate, or download captures.<br>The key stays in memory until you sign out or close this page.</p></div>
+      <form id="login-form"><label for="access-key">Operator access key</label><input id="access-key" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="Enter your access key"><button id="sign-in" type="submit">Sign in</button></form>
     </section>
-    <p id="message" class="message" role="status" aria-live="polite" aria-atomic="true">Sign in to view device status and controls.</p>
+    <p id="message" class="message" role="status" aria-live="polite" aria-atomic="true">Loading device status…</p>
     <div id="workspace" hidden>
       <div class="session-bar"><span id="pair-label"></span><div><button type="button" id="refresh" class="secondary">Refresh state</button><button type="button" id="sign-out" class="text-button">Sign out</button></div></div>
       <section aria-labelledby="devices-title"><div class="section-heading"><h2 id="devices-title">Device status</h2><span>Refreshes every 2 seconds while visible</span></div><div id="arms" class="arm-grid"></div></section>

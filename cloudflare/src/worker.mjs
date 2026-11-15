@@ -32,8 +32,17 @@ async function jsonBody(request) {
   if(!value || typeof value!=='object' || Array.isArray(value)) fail(400,'Expected JSON object');
   return value;
 }
+// Read-only routes that anyone may view without a key, for the one pair named in
+// PUBLIC_VIEW_PAIR_ID. Unset means every route still requires a key. Commands
+// and capture downloads always require an operator key.
+const PUBLIC_READS = new Set(['/v1/operator/state','/v1/operator/measurements']);
+function publicViewer(request,env,path) {
+  const pair=env.PUBLIC_VIEW_PAIR_ID;
+  if(request.method!=='GET' || request.headers.has('Authorization') || !PUBLIC_READS.has(path) || !pair || !ID.test(pair)) return null;
+  return {role:'viewer',pair_id:pair};
+}
 async function identity(request,env) {
-  const token=/^Bearer ([A-Za-z0-9_-]{10,256})$/.exec(request.headers.get('Authorization')??'')?.[1];
+  const token=/^Bearer ([A-Za-z0-9_-]{8,256})$/.exec(request.headers.get('Authorization')??'')?.[1];
   if(!token) fail(401,'Invalid credentials');
   const auth=await one(env.DB,'SELECT c.*,d.arm FROM credentials c LEFT JOIN devices d ON d.id=c.device_id AND d.pair_id=c.pair_id WHERE c.token_hash=? AND c.revoked=0',await digest(new TextEncoder().encode(token)));
   if(!auth || (auth.role==='device'&&!auth.arm)) fail(401,'Invalid credentials');
@@ -233,8 +242,8 @@ export default {
       if(request.method==='OPTIONS') response=new Response(null,{status:204,headers:{'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Content-SHA256','Access-Control-Max-Age':'600'}});
       else {
         const path=new URL(request.url).pathname;
-        const auth=await identity(request,env); const now=Date.now();
-        if(path.startsWith('/v1/operator/')&&auth.role!=='operator') fail(403,'Operator credential required');
+        const auth=publicViewer(request,env,path)??await identity(request,env); const now=Date.now();
+        if(path.startsWith('/v1/operator/')&&auth.role!=='operator'&&auth.role!=='viewer') fail(403,'Operator credential required');
         if(path.startsWith('/v1/device/')&&auth.role!=='device') fail(403,'Device credential required');
         if(path==='/v1/device/exchange'&&request.method==='POST') response=await exchange(request,env,auth,now);
         else if(path==='/v1/operator/state'&&request.method==='GET') response=await state(env,auth,now);

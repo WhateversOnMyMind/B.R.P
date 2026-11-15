@@ -22,11 +22,14 @@ export class ControlApi {
     this.#generation++;
   }
   signOut() { this.#key = ''; this.#generation++; }
-  async #request(path, { method = 'GET', body, blob = false } = {}) {
-    if (!this.authenticated) throw Object.assign(new Error('Sign in to continue.'), { status: 401 });
+  // publicRead: viewing state/history works without a key; the backend decides
+  // whether public viewing is enabled. Everything else needs the operator key.
+  async #request(path, { method = 'GET', body, blob = false, publicRead = false } = {}) {
+    const signedIn = this.authenticated;
+    if (!signedIn && !publicRead) throw Object.assign(new Error('Sign in with the operator key to do this.'), { status: 401 });
     const generation = this.#generation;
     const response = await this.fetcher(this.base + path, {
-      method, headers: { Authorization: `Bearer ${this.#key}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      method, headers: { ...(signedIn ? { Authorization: `Bearer ${this.#key}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}), credentials: 'omit', cache: 'no-store', redirect: 'error',
       signal: AbortSignal.timeout(8000)
     });
@@ -35,6 +38,7 @@ export class ControlApi {
     };
     ensureCurrent();
     if (response.status === 401 || response.status === 403) {
+      if (!signedIn) throw Object.assign(new Error('Public viewing is not enabled. Sign in with the operator key.'), { status: response.status, publicView: true });
       this.signOut();
       throw Object.assign(new Error('Access expired or was denied. Sign in with an authorized operator key.'), { status: response.status });
     }
@@ -47,11 +51,11 @@ export class ControlApi {
     ensureCurrent();
     return result;
   }
-  state() { return this.#request('/v1/operator/state'); }
+  state() { return this.#request('/v1/operator/state', { publicRead: true }); }
   measurements({fromMs,toMs,limit=100,beforeId}={}) {
     const query=new URLSearchParams({fromMs,toMs,limit});
     if(beforeId!==undefined) query.set('beforeId',beforeId);
-    return this.#request('/v1/operator/measurements?'+query);
+    return this.#request('/v1/operator/measurements?'+query, { publicRead: true });
   }
   async exportMeasurements({fromMs,toMs,limit=1000},onProgress=()=>{}) {
     const generation=this.#generation;

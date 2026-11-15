@@ -5,7 +5,7 @@
   "compatibility_date": "2026-10-23",
   "account_id": "f16ca94f69f2c080a6fe116173ab733d",
   "workers_dev": true,
-  "vars": {"ALLOWED_ORIGINS": "https://blindrunning.com,https://www.blindrunning.com"},
+  "vars": {"ALLOWED_ORIGINS": "https://blindrunning.com,https://www.blindrunning.com", "PUBLIC_VIEW_PAIR_ID": ""},
   "d1_databases": [{
     "binding": "DB",
     "database_name": "blindbalance-control",

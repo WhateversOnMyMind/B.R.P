@@ -169,3 +169,35 @@ test('an acknowledgment body delayed beyond expiry cannot become applied',async(
  assert.equal((await worker.fetch(request,h.env)).status,409);
  assert.equal((await h.state()).commands[0].state,'expired');
 });
+
+test('public viewing exposes only state and history of the configured pair, never commands or captures',async()=>{
+ const h=await createHarness(); await h.online();
+ const anon=(path,{method='GET',body,env=h.env,headers={}}={})=>worker.fetch(new Request(`https://control.example${path}`,{method,headers:{...(body?{'Content-Type':'application/json'}:{}),...headers},body:body===undefined?undefined:JSON.stringify(body)}),env,{});
+ const day=`fromMs=${Date.now()-86400000}&toMs=${Date.now()+60000}`;
+ // Disabled unless PUBLIC_VIEW_PAIR_ID is set.
+ assert.equal((await anon('/v1/operator/state')).status,401);
+ h.env.PUBLIC_VIEW_PAIR_ID='pair-a';
+ const view=await anon('/v1/operator/state',{headers:{Origin:'https://blindrunning.com'}});
+ assert.equal(view.status,200);
+ assert.equal(view.headers.get('Access-Control-Allow-Origin'),'https://blindrunning.com');
+ assert.equal((await view.json()).pairId,'pair-a');
+ assert.equal((await anon(`/v1/operator/measurements?${day}`)).status,200);
+ // Writes, downloads, device routes and other origins stay closed.
+ assert.equal((await anon('/v1/operator/commands',{method:'POST',body:{expectedRevision:0,action:'set_motor_enabled',target:'pair',value:false}})).status,401);
+ assert.equal((await anon('/v1/operator/captures/left-a/x')).status,401);
+ assert.equal((await anon('/v1/device/exchange',{method:'POST',body:{}})).status,401);
+ assert.equal((await anon('/v1/operator/state',{headers:{Origin:'https://evil.example'}})).status,403);
+ // A wrong key is rejected, not silently downgraded to viewing.
+ assert.equal((await h.request('/v1/operator/state',{as:'wrong-key-123'})).status,401);
+ assert.equal((await h.state()).commands.length,0);
+ // An invalid pair setting disables public viewing.
+ assert.equal((await anon('/v1/operator/state',{env:{...h.env,PUBLIC_VIEW_PAIR_ID:'bad pair!'}})).status,401);
+});
+
+test('an 8-character operator key is accepted; shorter keys are not',async()=>{
+ const h=await createHarness();
+ await h.DB.prepare('INSERT INTO credentials(token_hash,role,pair_id,device_id,label) VALUES (?,?,?,?,?)').bind(hash('yoyoyoyo'),'operator','pair-a',null,'short').run();
+ assert.equal((await h.request('/v1/operator/state',{as:'yoyoyoyo'})).status,200);
+ await h.DB.prepare('INSERT INTO credentials(token_hash,role,pair_id,device_id,label) VALUES (?,?,?,?,?)').bind(hash('yoyoyoy'),'operator','pair-a',null,'too-short').run();
+ assert.equal((await h.request('/v1/operator/state',{as:'yoyoyoy'})).status,401);
+});
