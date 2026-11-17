@@ -11,14 +11,14 @@
 <body>
   <a class="skip-link" href="#main">Skip to controls</a>
   <header class="site-header">
-    <a class="brand" href="/home.html" aria-label="B.R.P home"><span class="brand-mark">B.</span><span>B.R.P <small>Blind Running Project</small></span></a>
+    <a class="brand" href="/home.html" aria-label="B.R.P home"><span>B.R.P <small>Blind Running Project</small></span></a>
     <nav aria-label="Main navigation"><a href="/signup/">Sign up</a><a href="/checkin/">Check in</a><a href="/data/">Data</a><a href="/control/" aria-current="page">Control</a></nav>
   </header>
   <main id="main">
-    <div class="page-heading"><div><p class="eyebrow">BLINDBALANCE / OPERATOR CONSOLE</p><h1>A clear view.<br>Both arms.</h1><p class="intro">Check your pair, adjust feedback, and collect a short capture.</p></div><span class="badge" id="connection">Signed out</span></div>
+    <div class="page-heading"><div><h1>BlindBalance Control</h1><p class="intro">Status, feedback settings, logs and captures for the left and right arm boards.</p></div><span class="badge" id="connection">Signed out</span></div>
     <div id="configuration" class="notice" hidden></div>
     <section id="login-panel" class="panel login-panel" aria-labelledby="login-title">
-      <div><p class="eyebrow">OPERATOR SIGN-IN</p><h2 id="login-title">Sign in to change settings</h2><p>Viewing needs no key. Sign in to change feedback settings, record, recalibrate, or download captures.<br>The key stays in memory until you sign out or close this page.</p></div>
+      <div><h2 id="login-title">Operator sign-in</h2><p>Viewing needs no key. Sign in to change feedback settings, record, recalibrate, or download captures.<br>The key stays in memory until you sign out or close this page.</p></div>
       <form id="login-form"><label for="access-key">Operator access key</label><input id="access-key" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="Enter your access key"><button id="sign-in" type="submit">Sign in</button></form>
     </section>
     <p id="message" class="message" role="status" aria-live="polite" aria-atomic="true">Loading device status…</p>
@@ -26,7 +26,7 @@
       <div class="session-bar"><span id="pair-label"></span><div><button type="button" id="refresh" class="secondary">Refresh state</button><button type="button" id="sign-out" class="text-button">Sign out</button></div></div>
       <section aria-labelledby="devices-title"><div class="section-heading"><h2 id="devices-title">Device status</h2><span>Refreshes every 2 seconds while visible</span></div><div id="arms" class="arm-grid"></div></section>
       <section class="panel shared-panel" aria-labelledby="settings-title">
-        <div class="section-heading"><div><p class="eyebrow">SHARED SETTINGS</p><h2 id="settings-title">Feedback controls</h2></div><span class="badge" id="shared-status">Waiting for devices</span></div>
+        <div class="section-heading"><h2 id="settings-title">Feedback settings (both arms)</h2><span class="badge" id="shared-status">Waiting for devices</span></div>
         <p class="muted">Both arms must be fresh and use matching motor or piezo firmware. Changes are applied by the left arm, then confirmed by the right.</p>
         <div class="settings-grid"><div><h3 id="feedback-title">Feedback setting</h3><p id="feedback-help">Connect both arms with matching motor or piezo firmware to control feedback.</p><div class="button-group"><button type="button" id="feedback-on" disabled>Set ON</button><button type="button" id="feedback-off" class="secondary" disabled>Set OFF</button></div></div><form id="sensitivity-form"><label for="sensitivity">Sensitivity · dead zone</label><p id="sensitivity-help">Range 0–0.3. A larger dead zone tolerates more difference.</p><div class="input-action"><input id="sensitivity" type="number" min="0" max="0.3" step="any" value="0.055" required aria-describedby="sensitivity-help"><button id="sensitivity-submit" type="submit" disabled>Apply</button></div></form></div>
       </section>
@@ -49,7 +49,7 @@
     <aside class="operating-note"><strong>Local feedback keeps running during an internet outage.</strong><p>These controls are unavailable when a board is offline. Feedback enabled is a setting. PWM and tone status report commanded output, not measured vibration or audible sound; brief beeps may occur between page refreshes. Use the device’s physical power control when immediate shutdown is needed.</p></aside>
     <noscript><p class="notice">JavaScript is required for authenticated device controls. Other B.R.P pages remain available from the navigation.</p></noscript>
   </main>
-  <footer>B.R.P <span>Movement, with confidence.</span><a href="/home.html">Back to home ↗</a></footer>
+  <footer>B.R.P · Blind Running Project<a href="/home.html">Home</a></footer>
   <template id="arm-template"><article class="panel arm-card"><div class="arm-heading"><div><p class="eyebrow" data-field="side"></p><h3 data-field="title"></h3></div><span class="badge" data-field="freshness"></span></div><p class="device-meta" data-field="identity"></p><dl class="readings"><div><dt>Hardware</dt><dd data-field="hardware"></dd></div><div><dt>Beep cadence</dt><dd data-field="cadence"></dd></div><div><dt>Tone command</dt><dd data-field="tone"></dd></div><div><dt data-field="enabled-label">Feedback setting</dt><dd data-field="enabled"></dd></div><div><dt data-field="output-label">Feedback intensity</dt><dd data-field="output"></dd></div><div><dt>Dead zone</dt><dd data-field="sensitivity"></dd></div><div><dt>Settings revision</dt><dd data-field="revision"></dd></div><div><dt>Peer connection</dt><dd data-field="peer"></dd></div><div><dt>Last heartbeat</dt><dd data-field="age"></dd></div></dl><div class="capture-block"><h4>Raw capture</h4><p data-field="capture-status"></p><p class="capture-id" data-field="capture-id"></p><div class="button-group"><button type="button" data-action="raw_start">Start</button><button type="button" data-action="raw_stop" class="secondary">Stop</button><button type="button" data-action="download" class="secondary">Download</button><button type="button" data-action="raw_clear" class="text-button danger">Clear local</button></div><p class="caption">Up to 3 minutes / approximately 2 MB. Stop before downloading or clearing.</p></div><div class="maintenance"><div><h4>Recalibration</h4><p data-field="calibration">Keep this arm still during recalibration.</p></div><button type="button" data-action="recalibrate" class="secondary">Recalibrate</button></div></article></template>
 </body>
 </html>

@@ -3,164 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arm Swing Dashboard - Standalone</title>
+    <title>Arm Swing Data · B.R.P</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.95);
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            border: none;
-            padding: 20px;
-            font-weight: 600;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-        }
-        
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 10px 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin: 20px 0;
-        }
-        
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        
-        .status-connected {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border: 1px solid rgba(40, 167, 69, 0.3);
-        }
-        
-        .status-demo {
-            background: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
-            border: 1px solid rgba(255, 193, 7, 0.3);
-        }
-        
-        .last-update {
-            color: #6c757d;
-            font-size: 0.875rem;
-        }
-        
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
-        }
-        
-        #loadingSpinner {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
-            color: #667eea;
+        /* Plain early-web look, matching the control page: square boxes, solid borders, system fonts. */
+        body { font-family: Verdana, Tahoma, "Malgun Gothic", sans-serif; font-size: 14px; background: #e4e4e4; color: #111; margin: 0; }
+        * { border-radius: 0 !important; }
+        a { color: #0033cc; }
+        .site-header { background: #1d3557; color: #fff; border-bottom: 3px solid #000; padding: 0 24px; display: flex; align-items: stretch; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .brand { display: flex; align-items: center; padding: 12px 0; color: #fff; text-decoration: none; font-size: 20px; font-weight: bold; }
+        .brand small { font-size: 12px; font-weight: normal; margin-left: 6px; }
+        .site-nav { display: flex; align-items: stretch; font-size: 13px; }
+        .site-nav a { display: flex; align-items: center; padding: 0 16px; color: #fff; text-decoration: none; border-left: 1px solid #45608a; }
+        .site-nav a:last-child { border-right: 1px solid #45608a; }
+        .site-nav a:hover { background: #2c4f7c; text-decoration: underline; }
+        .site-nav [aria-current] { background: #e4e4e4; color: #111; font-weight: bold; }
+        .dashboard-container { max-width: 1100px; margin: 0 auto; padding: 20px 24px 28px; }
+        .page-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; background: #fff; border: 1px solid #000; padding: 14px 16px; margin-bottom: 16px; }
+        .page-heading h1 { font-size: 22px; font-weight: bold; margin: 0; }
+        .page-heading p { color: #555; margin: 6px 0 0; }
+        .card { border: 1px solid #000; background: #fff; margin-bottom: 16px; box-shadow: none; }
+        .card-header { background: #d4d4d4; color: #111; border-bottom: 1px solid #000; padding: 8px 16px; }
+        .card-header h5 { font-size: 16px; font-weight: bold; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); border-top: 1px solid #000; border-left: 1px solid #000; margin-bottom: 16px; }
+        .stat-card { background: #fff; padding: 10px 12px; border-right: 1px solid #000; border-bottom: 1px solid #000; }
+        .stat-label { color: #555; font-size: 12px; }
+        .stat-number { font-size: 22px; font-weight: bold; margin-top: 4px; font-variant-numeric: tabular-nums; }
+        .chart-container { position: relative; height: 360px; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1px solid #000; font-size: 12px; font-weight: bold; }
+        .status-badge i { display: inline-block; width: 8px; height: 8px; background: currentColor; }
+        .status-connected { background: #d8efd8; color: #0b4a0b; }
+        .status-demo { background: #ffeeba; color: #7a4a00; }
+        .last-update { color: #555; font-size: 12px; margin-top: 6px; }
+        .toast-container { position: fixed; top: 16px; right: 16px; z-index: 1050; }
+        .toast { border: 1px solid #000; box-shadow: none; font-size: 13px; }
+        .toast-header { background: #d4d4d4; color: #111; border-bottom: 1px solid #000; }
+        .toast-header i { display: none; }
+        #loadingSpinner { display: none; padding: 10px 14px; margin-bottom: 16px; background: #fffbe6; border: 1px solid #000; }
+        #loadingSpinner .spinner-border { display: none; }
+        #loadingSpinner p { margin: 0; }
+        @media (max-width: 560px) {
+            .site-header { flex-direction: column; gap: 0; padding: 0 16px; }
+            .site-nav { margin: 0 -16px; border-top: 1px solid #45608a; }
+            .site-nav a { flex: 1; justify-content: center; padding: 10px 4px; }
+            .dashboard-container { padding: 16px; }
         }
     </style>
 </head>
 <body>
+    <header class="site-header">
+        <a class="brand" href="/home.html">B.R.P <small>Blind Running Project</small></a>
+        <nav class="site-nav" aria-label="Main navigation"><a href="/signup/">Sign up</a><a href="/checkin/">Check in</a><a href="/data/" aria-current="page">Data</a><a href="/control/">Control</a></nav>
+    </header>
     <div class="dashboard-container">
-        <!-- Header -->
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="h3 mb-1">
-                            <i class="fas fa-chart-line me-2"></i>
-                            Arm Swing Dashboard
-                        </h1>
-                        <p class="mb-0 opacity-75">Real-time LOLIN D32 Sensor Monitoring</p>
-                    </div>
-                    <div class="text-end">
-                        <div class="status-badge status-connected" id="connection-status">
-                            <i class="fas fa-circle"></i>
-                            <span>Connected to Google Sheets</span>
-                        </div>
-                        <div class="last-update mt-2" id="last-update">
-                            Last update: Loading...
-                        </div>
-                    </div>
+        <div class="page-heading">
+            <div>
+                <h1>Arm Swing Data</h1>
+                <p>Swing counts and distance from the Google Sheets log. Refreshes every 2.5 minutes.</p>
+            </div>
+            <div class="text-end">
+                <div class="status-badge status-connected" id="connection-status">
+                    <i aria-hidden="true"></i>
+                    <span>Connected to Google Sheets</span>
                 </div>
+                <div class="last-update" id="last-update">Last update: Loading...</div>
             </div>
         </div>
 
@@ -169,7 +80,7 @@
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-3">Loading sensor data...</p>
+            <p>Loading sensor data...</p>
         </div>
 
         <!-- Statistics Grid -->
@@ -230,7 +141,6 @@
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>
                             Swing Count Over Time
                         </h5>
                     </div>
@@ -245,7 +155,6 @@
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-ruler me-2"></i>
                             Distance Over Time
                         </h5>
                     </div>
@@ -289,19 +198,21 @@
                         datasets: [{
                             label: 'Left Arm',
                             data: [],
-                            borderColor: '#667eea',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
+                            borderColor: '#0072BD',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 0
                         }, {
                             label: 'Right Arm',
                             data: [],
-                            borderColor: '#764ba2',
-                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
+                            borderColor: '#D95319',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 0
                         }]
                     },
                     options: {
@@ -340,19 +251,21 @@
                         datasets: [{
                             label: 'Left Distance (cm)',
                             data: [],
-                            borderColor: '#28a745',
-                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
+                            borderColor: '#0072BD',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 0
                         }, {
                             label: 'Right Distance (cm)',
                             data: [],
-                            borderColor: '#dc3545',
-                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
+                            borderColor: '#D95319',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 0
                         }]
                     },
                     options: {
@@ -560,16 +473,13 @@
 
             updateConnectionStatus(connected, errorMessage = '') {
                 const statusElement = document.getElementById('connection-status');
-                const statusIcon = statusElement.querySelector('i');
                 const statusText = statusElement.querySelector('span');
 
                 if (connected) {
                     statusElement.className = 'status-badge status-connected';
-                    statusIcon.className = 'fas fa-circle';
                     statusText.textContent = 'Connected to Google Sheets';
                 } else {
                     statusElement.className = 'status-badge status-demo';
-                    statusIcon.className = 'fas fa-exclamation-triangle';
                     statusText.textContent = 'Connection failed';
                 }
             }
