@@ -6,7 +6,7 @@ import { validateApiBase } from '../B.R.P Website/control/api.mjs';
 const repository = fileURLToPath(new URL('..', import.meta.url));
 // Deliberately list individual public files: never copy entire source directories.
 const publicFiles = [
-  'home.html', 'homestyle.css',
+  'home.html', 'homestyle.css', 'site.css',
   'assets/카카오_갈색.png', 'assets/카카오_노란색.png',
   'signup/index.html', 'signup/main.js', 'signup/style.css',
   'checkin/index.html', 'checkin/checkin.js', 'checkin/style.css',
